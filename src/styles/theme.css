@@ -25,6 +25,7 @@ body { font-family: 'Zen Kaku Gothic New', sans-serif; background: #0f0f1a; }
 .cs { background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.3); color: #fbbf24; }
 .cl { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); }
 .cc { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.35); color: #fbbf24; }
+.cx { background: rgba(103,232,249,.14); border: 1px solid rgba(103,232,249,.35); color: #67e8f9; }
 .xpm { width: 48px; height: 5px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
 .xpf { height: 100%; border-radius: 3px; transition: width .5s; }
 .xpt { font-size: 10px; color: rgba(255,255,255,.4); }

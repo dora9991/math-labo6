@@ -90,11 +90,13 @@ export function initialPlayerState(studentId) {
     sp: 0,             // バトルのスキルポイント（正解で貯まり、スキル発動で消費。バトルをまたいで維持）
     currentHp: null,   // バトル間で持ち越す現在HP（null=満タン。0以下にはせず、ショップの治療で全回復）
     coins: 0,          // 所持コイン（タイムアタックで稼ぎ、ショップでアイテム購入に使う）
+    crystals: 0,       // 所持クリスタル（レアコイン。ボス撃破などで貯まり、スキルガチャに使う）
     item: null,        // 所持アイテム（id 文字列。1つだけ持てる。バトルで使うと消費）
     gacha: { owned: {}, weapon: null, armor: null }, // ガチャ装備：owned={id:個数}, 装備中の武器/防具id
+    skillOwned: {},    // スキルガチャの所持数 { skillId: 個数 }（被りカウント。装備可否は ownedSkills を見る）
     challengeCleared: {}, // { "ch1a": true, ... } 旧チャレンジ（難問）クリア記録（後方互換で保持）
     calcKing: {}, // 計算王への道：単元ごとの自己ベスト { unitId: { bestStreak, bestTime5 } }
-    ownedSkills: ["time2x", "ultimate"], // 所持バトルスキルid（初期は基本2種。ショップで買い切り追加）
+    ownedSkills: ["time2x", "ultimate"], // 所持バトルスキルid（初期は基本2種。スキルガチャで追加）
     equip: { 1: "time2x", 2: "ultimate" }, // スロット1/2に装備中のスキルid
     seenMonsters: {},  // { "m_c1_u1": true, ... } 解放を既に見たモンスター（「新しい敵」通知の制御）
     avatar: null,      // 自分のキャラ { type:"template", id } または { type:"image", src:dataURL }。null=既定（🐧）
@@ -135,6 +137,8 @@ export function normalizePlayerState(p) {
     : { owned: {}, weapon: null, armor: null };
   out.seenMonsters = p.seenMonsters || {};
   out.unitMastery = p.unitMastery || {};
+  out.crystals = Number.isFinite(p.crystals) ? p.crystals : 0;
+  out.skillOwned = (p.skillOwned && typeof p.skillOwned === "object") ? p.skillOwned : {};
   out.ownedSkills = Array.isArray(p.ownedSkills) && p.ownedSkills.length ? p.ownedSkills : [...base.ownedSkills];
   out.equip = { ...base.equip, ...(p.equip || {}) };
   // 装備中スキルが未所持なら基本スキルへフォールバック

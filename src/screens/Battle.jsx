@@ -17,7 +17,7 @@ import { isCorrect, playerLevel } from "../engine/scoring.js";
 
 const ENEMY_CHARGE_NEED = 2; // super型が超必殺を撃つまでのチャージ回数（engine ENEMY_AI.super と一致）
 
-export default function Battle({ player, monster, onResult, onSpChange, onItemUse, onHpChange, onExit, onMistake }) {
+export default function Battle({ player, monster, onResult, onSpChange, onItemUse, onHpChange, onWinBonus, onExit, onMistake }) {
   const lv = playerLevel(player); // 現在ワールド（学年）のレベルでバトル能力が決まる
   // 制限時間 = 基本の制限時間 × (自分のレベル+10) ÷ (敵の適正レベル+10)（切り上げ）
   //  +10で格差をマイルドに。自分が強いほど長く、格上の敵だと短くなる。最低1秒。
@@ -78,6 +78,29 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
   // 新しい問題になったら（ロック解除中は）入力欄にフォーカス
   useEffect(() => { if (!locked && phaseRef.current === "fight") inputRef.current?.focus(); }, [q, locked]);
 
+  // ── 追加スキルのための状態（refで即時参照、UIに出すものは state も） ──
+  const timeBuffRef = useRef(null);   // { turns, mult, inf } 次の数問の制限時間を伸ばす
+  const poisonRef = useRef(null);     // { turns, dmg } 敵への継続ダメージ
+  const comboKeepRef = useRef(null);  // { turns } ミスしてもコンボ維持
+  const doubleNextRef = useRef(false);// 次の正解ダメージ2回ぶん
+  const critRef = useRef(null);       // { turns } コンボ会心ボーナス2倍
+  const counterRef = useRef(null);    // { turns, dmg } 被弾時に反撃
+  const reviveRef = useRef(false);    // HP0で一度だけ復活
+  const winBonusRef = useRef({ coins: 0, crystals: 0 }); // 勝利時ボーナスの累積
+  const [buffTags, setBuffTags] = useState([]); // 画面上のバフ表示用（簡易）
+  // 画面のバフ表示を再計算
+  function refreshBuffTags() {
+    const tags = [];
+    if (timeBuffRef.current) tags.push({ icon: "⏱️", color: "#67e8f9" });
+    if (poisonRef.current) tags.push({ icon: "☠️", color: "#a3e635" });
+    if (comboKeepRef.current) tags.push({ icon: "🔗", color: "#fbbf24" });
+    if (doubleNextRef.current) tags.push({ icon: "✌️", color: "#facc15" });
+    if (critRef.current) tags.push({ icon: "🎯", color: "#fb7185" });
+    if (counterRef.current) tags.push({ icon: "🪃", color: "#38bdf8" });
+    if (reviveRef.current) tags.push({ icon: "🕊️", color: "#fb923c" });
+    setBuffTags(tags);
+  }
+
   const setTimerBoth = (v) => { timerRef.current = v; setTimer(v); };
   // バフは ref（即時参照）と state（表示）を両方更新する
   const setAtkBuffBoth = (v) => { atkBuffRef.current = v; setAtkBuff(v); };
@@ -104,10 +127,30 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
       const left = rg.turns - 1;
       setRegenBoth(left > 0 ? { ...rg, turns: left } : null);
     }
+    // 毒（ポイズン）：1問ごとに敵へ継続ダメージ
+    const ps = poisonRef.current;
+    if (ps && ps.turns > 0) {
+      const dmg = ps.dmg;
+      setMonDmg(`-${dmg}`); setDmgKey((k) => k + 1);
+      setMonsterHp((hp) => {
+        const nv = Math.max(0, hp - dmg);
+        if (nv <= 0 && !endedRef.current) setTimeout(triggerWin, 300);
+        return nv;
+      });
+      poisonRef.current = ps.turns - 1 > 0 ? { ...ps, turns: ps.turns - 1 } : null;
+    }
     setQ((cur) => genBattleProblem(monster, cur?.id));
     setInput("");
     setLocked(false); lockedRef.current = false;
-    setTimerBoth(stats.timer);
+    // 制限時間：時間バフ（しゅうちゅう／タイムフリーズ等）があれば伸ばす
+    const tb = timeBuffRef.current;
+    let t = stats.timer;
+    if (tb && tb.turns > 0) {
+      t = tb.inf ? 99 : Math.min(99, Math.ceil(stats.timer * (tb.mult ?? 1.5)));
+      timeBuffRef.current = tb.turns - 1 > 0 ? { ...tb, turns: tb.turns - 1 } : null;
+    }
+    setTimerBoth(t);
+    refreshBuffTags();
   }
 
   // SPを変更して即保存（バトルをまたいで維持されるよう App 側へ通知）
@@ -123,7 +166,7 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
     if (phaseRef.current !== "fight" || endedRef.current || lockedRef.current) return;
     if (sp < skill.cost) return;
     changeSp(sp - skill.cost);
-    const isUlt = skill.kind === "ultimate" || skill.kind === "drain";
+    const isUlt = skill.kind === "ultimate" || skill.kind === "drain" || (skill.kind === "burst" && (skill.mult ?? 0) > 0);
     sfx.skill({ ult: isUlt });
     setSkillFx({ name: skill.name, icon: skill.icon, color: skill.color, big: isUlt });
     setTimeout(() => setSkillFx(null), 2000);
@@ -145,8 +188,56 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
     } else if (skill.kind === "dmgup") {
       setAtkBuffBoth({ turns: skill.turns ?? 2, mult: skill.mult ?? 1.5 });
       setLog(`${skill.icon} ${skill.name}！ ${skill.turns}ターン 与ダメージ${skill.mult}倍！`);
-    } else if (skill.kind === "ultimate" || skill.kind === "drain") {
-      const dmg = ultimateDamage(stats.atk, skill.mult);
+    } else if (skill.kind === "timebuff") {
+      timeBuffRef.current = { turns: skill.turns ?? 2, mult: skill.mult ?? 1.5, inf: !!skill.inf };
+      // 今出ている問題にも即反映
+      setTimerBoth(skill.inf ? 99 : Math.min(99, Math.ceil(timerRef.current * (skill.mult ?? 1.5))));
+      refreshBuffTags();
+      setLog(`${skill.icon} ${skill.name}！ ${skill.inf ? "制限時間がなくなった！" : `${skill.turns}問のあいだ 時間に余裕ができた！`}`);
+    } else if (skill.kind === "poison") {
+      poisonRef.current = { turns: skill.turns ?? 3, dmg: Math.max(1, Math.round(stats.atk * (skill.mult ?? 1.2))) };
+      refreshBuffTags();
+      setLog(`${skill.icon} ${skill.name}！ 敵を毒におかした！（${skill.turns}ターン継続ダメージ）`);
+    } else if (skill.kind === "combokeep") {
+      comboKeepRef.current = { turns: skill.turns ?? 3 };
+      refreshBuffTags();
+      setLog(`${skill.icon} ${skill.name}！ ${skill.turns}ターン コンボが切れなくなった！`);
+    } else if (skill.kind === "doublenext") {
+      doubleNextRef.current = true;
+      refreshBuffTags();
+      setLog(`${skill.icon} ${skill.name}！ 次の正解のダメージが2倍だ！`);
+    } else if (skill.kind === "critup") {
+      critRef.current = { turns: skill.turns ?? 3 };
+      refreshBuffTags();
+      setLog(`${skill.icon} ${skill.name}！ ${skill.turns}ターン コンボの会心ボーナスが2倍！`);
+    } else if (skill.kind === "counter") {
+      counterRef.current = { turns: skill.turns ?? 3, dmg: Math.max(1, Math.round(stats.atk * (skill.mult ?? 2))) };
+      refreshBuffTags();
+      setLog(`${skill.icon} ${skill.name}！ ${skill.turns}ターン 被弾するたび反撃する！`);
+    } else if (skill.kind === "revive") {
+      reviveRef.current = true;
+      refreshBuffTags();
+      setLog(`${skill.icon} ${skill.name}！ 倒れても一度だけ復活できる！`);
+    } else if (skill.kind === "winbonus") {
+      winBonusRef.current = {
+        coins: (winBonusRef.current.coins || 0) + (skill.coins || 0),
+        crystals: (winBonusRef.current.crystals || 0) + (skill.crystals || 0),
+      };
+      setLog(`${skill.icon} ${skill.name}！ 勝つとごほうびが増える！`);
+    } else if (skill.kind === "ultimate" || skill.kind === "drain" || skill.kind === "burst") {
+      // burst：与ダメ倍・時間無制限・継続回復などのバフを同時付与
+      if (skill.kind === "burst") {
+        if (skill.buffMult) setAtkBuffBoth({ turns: skill.buffTurns ?? 3, mult: skill.buffMult });
+        if (skill.timeInf) { timeBuffRef.current = { turns: skill.timeInf, inf: true }; setTimerBoth(99); }
+        if (skill.regenPct) setRegenBoth({ turns: skill.regenTurns ?? 5, pct: skill.regenPct });
+        refreshBuffTags();
+      }
+      const dmg = (skill.mult ?? 0) > 0 ? ultimateDamage(stats.atk, skill.mult) : 0;
+      if (dmg <= 0) {
+        // ダメージなし（ゼロカウント／オーバーロード等）はバフのみ
+        setLog(`${skill.icon} ${skill.name}発動！ 力がみなぎる！`);
+        return;
+      }
       // カットイン演出を見せてから着弾させる（倒した瞬間の余韻を出す）
       setTimeout(() => {
         if (endedRef.current) return;
@@ -203,6 +294,9 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
   function triggerWin() {
     if (endedRef.current) return;
     endedRef.current = true;
+    // 勝利ボーナス（ついてる／クリスタルラック等のスキル効果）を反映
+    const wb = winBonusRef.current;
+    if (wb && (wb.coins || wb.crystals)) onWinBonus?.({ coins: wb.coins || 0, crystals: wb.crystals || 0 });
     saveHp(playerHpRef.current); // 勝っても全快しない：残りHPを持ち越す
     setPhase("win"); phaseRef.current = "win";
     bgm.play("victory", { loop: false });
@@ -224,6 +318,16 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
 
   function triggerLose() {
     if (endedRef.current) return;
+    // フェニックス：HP0でも一度だけ全回復で復活
+    if (reviveRef.current) {
+      reviveRef.current = false;
+      refreshBuffTags();
+      setPlayerHp(stats.maxHp);
+      setHurt(false);
+      setLog("🕊️ フェニックス！ 倒れたが全回復で復活した！");
+      sfx.skill({ ult: true });
+      return;
+    }
     endedRef.current = true;
     saveHp(1); // 敗北：HP1で生き残る（ショップで治療して再挑戦）
     setPhase("lose"); phaseRef.current = "lose";
@@ -242,29 +346,54 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
   function enemyHit(rawDmg, label, fx) {
     // 1パン防止：1回の被ダメは最大HPの70%まで（満タンからの即死を避ける）
     let dmg = Math.max(1, Math.min(Math.round(rawDmg), Math.ceil(stats.maxHp * 0.7)));
-    let guarded = false;
+    let guarded = false, invinc = false;
     const gb = guardBuffRef.current;
     if (gb && gb.turns > 0) {
-      dmg = Math.max(1, Math.round(dmg * gb.reduce));
-      guarded = true;
+      if ((gb.reduce ?? 0.5) <= 0) { dmg = 0; invinc = true; } // 完全無敵
+      else { dmg = Math.max(1, Math.round(dmg * gb.reduce)); guarded = true; }
       const left = gb.turns - 1;
       setGuardBuffBoth(left > 0 ? { ...gb, turns: left } : null);
     }
     setShakeAns(true); setTimeout(() => setShakeAns(false), 460);
-    setHurt(true); setTimeout(() => setHurt(false), 520);
+    if (dmg > 0) { setHurt(true); setTimeout(() => setHurt(false), 520); }
     setMonState("attack"); setAnimKey((k) => k + 1);
     if (fx) showEnemyFx(fx);
-    setLog(`${label} -${dmg}` + (guarded ? "（🛡️ガード！）" : ""));
+    setLog(`${label} -${dmg}` + (invinc ? "（🌟無敵！）" : guarded ? "（🛡️ガード！）" : ""));
     setPlayerHp((hp) => {
       const nv = Math.max(0, hp - dmg);
       if (nv <= 0) setTimeout(triggerLose, 500);
       return nv;
     });
+    // カウンター：被弾するたび反撃（1ターン消費）
+    const ct = counterRef.current;
+    if (ct && ct.turns > 0 && dmg > 0) {
+      counterRef.current = ct.turns - 1 > 0 ? { ...ct, turns: ct.turns - 1 } : null;
+      refreshBuffTags();
+      setTimeout(() => {
+        if (endedRef.current) return;
+        setMonDmg(`-${ct.dmg}`); setDmgKey((k) => k + 1);
+        setMonState("damage"); setAnimKey((k) => k + 1);
+        setLog(`🪃 カウンター！ ${ct.dmg}ダメージ！`);
+        setMonsterHp((hp) => {
+          const nv = Math.max(0, hp - ct.dmg);
+          if (nv <= 0 && !endedRef.current) setTimeout(triggerWin, 400);
+          else setTimeout(() => setMonState("idle"), 500);
+          return nv;
+        });
+      }, 600);
+    }
   }
 
   // 敵のターン（プレイヤーの不正解・時間切れで回ってくる）。AIに従って行動を分岐。
   function enemyTurn(reason) {
-    setCombo(0);
+    // コンボキープ中はミスしてもコンボ維持（1チャージ消費）。それ以外は0に戻す。
+    const ck = comboKeepRef.current;
+    if (ck && ck.turns > 0) {
+      comboKeepRef.current = ck.turns - 1 > 0 ? { ...ck, turns: ck.turns - 1 } : null;
+      refreshBuffTags();
+    } else {
+      setCombo(0);
+    }
     const { st, act } = enemyDecide(monster.ai || "plain", aiStateRef.current, monster);
     aiStateRef.current = st;
     const pre = reason ? reason + " " : "";
@@ -313,7 +442,13 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
       setCombo(newCombo);
       changeSp(sp + 1); // 正解でSP+1（5でスキル1、10でスキル2）
       let dmg = calcDamage(stats.atk, newCombo);
-      let boosted = false;
+      let boosted = false, crit = false, doubled = false;
+      // クリティカル：コンボ会心ボーナス（atk×0.5）をもう一段ぶん上乗せ
+      const cr = critRef.current;
+      if (cr && cr.turns > 0) {
+        if (newCombo >= 3) { dmg += Math.floor(stats.atk * 0.5); crit = true; }
+        critRef.current = cr.turns - 1 > 0 ? { ...cr, turns: cr.turns - 1 } : null;
+      }
       const ab = atkBuffRef.current;
       if (ab && ab.turns > 0) {
         dmg = Math.round(dmg * ab.mult);
@@ -321,11 +456,14 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
         const left = ab.turns - 1;
         setAtkBuffBoth(left > 0 ? { ...ab, turns: left } : null);
       }
+      // ダブルアップ：次の正解ダメージを2倍（1回だけ）
+      if (doubleNextRef.current) { dmg *= 2; doubled = true; doubleNextRef.current = false; }
+      refreshBuffTags();
       setShowRing(true); setTimeout(() => setShowRing(false), 700);
       setMonState("damage"); setAnimKey((k) => k + 1);
       setMonDmg(`-${dmg}`); setDmgKey((k) => k + 1);
       setLog(
-        (boosted ? "💪パワーアップ！ " : "") +
+        (doubled ? "✌️ダブルアップ！ " : "") + (crit ? "🎯会心！ " : "") + (boosted ? "💪パワーアップ！ " : "") +
         (newCombo >= 3 ? `正解！🔥${newCombo}コンボ ${dmg}ダメージ！` : `正解！${dmg}ダメージ！`)
       );
       setMonsterHp((hp) => {
@@ -458,6 +596,9 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
           </div>
           <span style={{ fontSize: 13, fontWeight: 900, color: "#cceebb", minWidth: 28, textAlign: "right" }}>{timer}</span>
           {combo >= 2 && <span className="bt-combo">🔥{combo}</span>}
+          {buffTags.map((b, i) => (
+            <span key={i} style={{ fontSize: 14, filter: `drop-shadow(0 0 3px ${b.color})` }}>{b.icon}</span>
+          ))}
         </div>
 
         {/* 問題＋文字入力 */}

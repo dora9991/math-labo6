@@ -42,7 +42,7 @@ import Character from "./screens/Character.jsx";
 import HowTo from "./screens/HowTo.jsx";
 import Clinic from "./screens/Clinic.jsx";
 import { findItem, treatCost } from "./engine/items.js";
-import { skillForBossDrop, getPlayerBattleStats, BATTLE_SKILLS, battleBonuses, isCalcKingCleared, CALC_KING_CLEAR_STREAK } from "./engine/battle.js";
+import { getPlayerBattleStats, BATTLE_SKILLS, battleBonuses, isCalcKingCleared, CALC_KING_CLEAR_STREAK, findSkill, rollSkillGacha, rollSkillGacha10, SKILL_RARITY, SKILL_GACHA_COST_1, SKILL_GACHA_COST_10 } from "./engine/battle.js";
 import { MONSTERS } from "./data/monsters.js";
 import { foldSequence } from "./engine/unitMastery.js";
 import { isUnitMonsterUnlocked } from "./engine/unlock.js";
@@ -79,6 +79,7 @@ export default function App() {
   const [loginBonus, setLoginBonus] = useState(null); // ログインボーナス演出 { reward, streak, isFifth }
   const loginCheckedRef = useRef(false);              // 今セッションでログイン判定済みか
   const [skillGet, setSkillGet] = useState(null); // スキル入手演出（章ボス撃破）
+  const [crystalGet, setCrystalGet] = useState(null); // クリスタル入手演出（ボス撃破）{ amount }
   const [calcKingClear, setCalcKingClear] = useState(null); // 計算王クリア演出（バトル攻撃力アップ）
   const [newMonster, setNewMonster] = useState(null); // 新モンスター出現演出（タイムアタックで解放）
   const [weakKey, setWeakKey] = useState(0); // 苦手タイムアタックの再挑戦（もう一回）でリセットする用
@@ -389,6 +390,44 @@ export default function App() {
     return findGear(id);
   }
 
+  // スキルガチャを引く（クリスタル消費）。count=1 or 10。
+  //  当たったスキルを所持に追加。既に所持していれば「被り」→ レア度に応じてコイン還元。
+  //  返り値：演出用の配列 [{ id, skill, isNew, refund }]（クリスタル不足なら null）。
+  function pullSkillGacha(count = 1) {
+    const cost = count === 10 ? SKILL_GACHA_COST_10 : SKILL_GACHA_COST_1;
+    if ((data.player.crystals ?? 0) < cost) return null;
+    const ids = count === 10 ? rollSkillGacha10() : [rollSkillGacha()];
+
+    // 既存の所持状態をもとに「新規 / 被り」を判定（連続で引いた分も加味）
+    const already = new Set(data.player.ownedSkills || []);
+    const results = ids.map((id) => {
+      const skill = findSkill(id);
+      const isNew = skill && !already.has(id);
+      if (isNew) already.add(id);
+      const refund = isNew ? 0 : (SKILL_RARITY[skill?.rarity]?.refund || 0);
+      return { id, skill, isNew, refund };
+    });
+    const totalRefund = results.reduce((s, r) => s + r.refund, 0);
+
+    updatePlayer((p) => {
+      if ((p.crystals ?? 0) < cost) return p; // 二重引き防止
+      const owned = [...(p.ownedSkills || [])];
+      const skillOwned = { ...(p.skillOwned || {}) };
+      for (const id of ids) {
+        skillOwned[id] = (skillOwned[id] || 0) + 1;
+        if (!owned.includes(id)) owned.push(id);
+      }
+      return {
+        ...p,
+        crystals: (p.crystals ?? 0) - cost,
+        coins: (p.coins ?? 0) + totalRefund,
+        ownedSkills: owned,
+        skillOwned,
+      };
+    });
+    return results;
+  }
+
   // ショップ：武器/防具を装備（未所持は不可。同じものをもう一度押すと外す）
   function equipGear(type, gearId) {
     updatePlayer((p) => {
@@ -468,6 +507,7 @@ export default function App() {
       });
     },
     setCoins: (n) => updatePlayer((p) => ({ ...p, coins: Math.max(0, Math.round(n) || 0) })),
+    setCrystals: (n) => updatePlayer((p) => ({ ...p, crystals: Math.max(0, Math.round(n) || 0) })),
     setSp: (n) => updatePlayer((p) => ({ ...p, sp: Math.max(0, Math.min(10, Math.round(n) || 0)) })),
     fullHeal: () => updatePlayer((p) => ({ ...p, currentHp: null })),
     maxAllStars: () => updatePlayer((p) => {
@@ -534,21 +574,22 @@ export default function App() {
     if (win) addXp(gained);
     // 敗北：HP1（Battle側で保存済み）でメニュー画面へ戻る
     if (!win) { setBattleMonster(null); setScreen("home"); return; }
-    // 章ボス・ラスボスを初めてたおしたら、対応スキルを入手
+    // 章ボス・ラスボスを初めてたおしたら、スキルガチャ用のクリスタルを入手
     if (win && !alreadyCleared && (battleMonster.kind === "chapterBoss" || battleMonster.kind === "finalBoss")) {
-      const dropKey = battleMonster.kind === "finalBoss" ? "final" : battleMonster.chapterId;
-      const drop = skillForBossDrop(dropKey);
-      if (drop) {
-        let granted = false;
-        updatePlayer((p) => {
-          const owned = p.ownedSkills || [];
-          if (owned.includes(drop.id)) return p;
-          granted = true;
-          return { ...p, ownedSkills: [...owned, drop.id] };
-        });
-        if (granted) setTimeout(() => setSkillGet(drop), 1700); // 勝利演出のあとに入手演出
-      }
+      const amount = battleMonster.kind === "finalBoss" ? 30 : 8; // ラスボス30・章ボス8
+      updatePlayer((p) => ({ ...p, crystals: (p.crystals ?? 0) + amount }));
+      setTimeout(() => setCrystalGet({ amount }), 1700); // 勝利演出のあとに入手演出
     }
+  }
+
+  // バトル勝利時のボーナス（ついてる／クリスタルラック等のスキル効果）
+  function applyWinBonus({ coins = 0, crystals = 0 } = {}) {
+    if (!coins && !crystals) return;
+    updatePlayer((p) => ({
+      ...p,
+      coins: (p.coins ?? 0) + coins,
+      crystals: (p.crystals ?? 0) + crystals,
+    }));
   }
 
   // 効果音：ボタンのクリック（決定/戻る）を全体で拾う（ホバーの移動音は無し）
@@ -760,7 +801,7 @@ export default function App() {
 
   // スキルセット画面（スロット1/2に装備するスキルを選ぶ）
   if (screen === "skill") {
-    return <Skill player={data.player} onEquip={setEquip} onBack={() => setScreen("home")} />;
+    return <Skill player={data.player} onEquip={setEquip} onPullSkill={pullSkillGacha} onBack={() => setScreen("home")} />;
   }
 
   // ステータス詳細（単元・小単元ごとの理解度・正答率・AIの一言）
@@ -875,6 +916,7 @@ export default function App() {
         onSpChange={(sp) => updatePlayer((p) => ({ ...p, sp }))}
         onItemUse={() => updatePlayer((p) => ({ ...p, item: null }))}
         onHpChange={(hp) => updatePlayer((p) => ({ ...p, currentHp: hp }))}
+        onWinBonus={applyWinBonus}
         onMistake={recordBattleMistake}
         onExit={() => setBattleMonster(null)}
       />
@@ -949,6 +991,7 @@ export default function App() {
         />
       )}
       {skillGet && <SkillGetOverlay skill={skillGet} onDone={() => setSkillGet(null)} />}
+      {crystalGet && <CrystalGetOverlay amount={crystalGet.amount} onDone={() => setCrystalGet(null)} />}
       {calcKingClear && (
         <CalcKingClearOverlay
           chapter={findChapterById(calcKingClear.unitId)}
@@ -1008,6 +1051,21 @@ function SkillGetOverlay({ skill, onDone }) {
         <div style={{ fontSize: 20, fontWeight: 900, color: skill.color }}>{skill.name}</div>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,.65)", margin: "8px 0 14px", lineHeight: 1.5 }}>{skill.desc}</div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,.5)" }}>「スキル」画面でスロット{skill.slot}に装備できるよ！</div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginTop: 12 }}>タップで閉じる</div>
+      </div>
+    </div>
+  );
+}
+
+// ボス撃破でクリスタルを入手したときの演出
+function CrystalGetOverlay({ amount, onDone }) {
+  return (
+    <div onClick={onDone} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div className="glass" style={{ maxWidth: 320, padding: "26px 24px", textAlign: "center", border: "2px solid #67e8f9", animation: "rankUpPop .5s cubic-bezier(.2,1.4,.4,1) both" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#67e8f9", letterSpacing: 2 }}>💎 CRYSTAL GET! 💎</div>
+        <div style={{ fontSize: 56, margin: "10px 0" }}>💎</div>
+        <div style={{ fontSize: 26, fontWeight: 900, color: "#67e8f9" }}>クリスタル +{amount}</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,.65)", margin: "8px 0 4px", lineHeight: 1.5 }}>「スキル」画面のスキルガチャで新しいスキルを手に入れよう！</div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginTop: 12 }}>タップで閉じる</div>
       </div>
     </div>

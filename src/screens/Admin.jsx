@@ -22,6 +22,7 @@ export default function Admin({ player, records, admin, onExport, onImport, onBa
   const lv = playerLevel(player); // 現在ワールド（学年）のレベル
   const [lvInput, setLvInput] = useState(String(lv));
   const [coinInput, setCoinInput] = useState(String(player.coins ?? 0));
+  const [crystalInput, setCrystalInput] = useState(String(player.crystals ?? 0));
   const [spInput, setSpInput] = useState(String(player.sp ?? 0));
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -45,6 +46,7 @@ export default function Admin({ player, records, admin, onExport, onImport, onBa
         <div className="glass" style={{ padding: "12px 14px", display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12, color: "rgba(255,255,255,.7)" }}>
           <span>Lv.{lv}（{levelTitle(lv)}）</span>・
           <span>💰{player.coins ?? 0}</span>・
+          <span>💎{player.crystals ?? 0}</span>・
           <span>⚡SP {player.sp ?? 0}/10</span>・
           <span>撃破 {clearedCount}/{MONSTERS.length}体</span>・
           <span>スキル {ownedSkills}個</span>
@@ -60,6 +62,10 @@ export default function Admin({ player, records, admin, onExport, onImport, onBa
           <Row label="コイン">
             <input style={field} value={coinInput} inputMode="numeric" onChange={(e) => setCoinInput(e.target.value)} />
             <button style={setBtn} data-sfx="none" onClick={() => admin.setCoins(Number(coinInput))}>設定</button>
+          </Row>
+          <Row label="クリスタル💎">
+            <input style={field} value={crystalInput} inputMode="numeric" onChange={(e) => setCrystalInput(e.target.value)} />
+            <button style={setBtn} data-sfx="none" onClick={() => admin.setCrystals(Number(crystalInput))}>設定</button>
           </Row>
           <Row label="SP（0〜10）">
             <input style={field} value={spInput} inputMode="numeric" onChange={(e) => setSpInput(e.target.value)} />

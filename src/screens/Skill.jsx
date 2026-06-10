@@ -1,21 +1,19 @@
 // ============================================================
 // Skill.jsx — バトルで使うスキルをセットする画面
 //  ・スロット1（SP5枠）・スロット2（SP10枠）にそれぞれ1つ装備する
-//  ・所持スキル(ownedSkills)から選ぶ。未所持はショップで買い切り解放
+//  ・所持スキル(ownedSkills)から選ぶ。未所持はスキルガチャ（クリスタル）で入手
 // ============================================================
 import Header from "../components/Header.jsx";
-import { skillsForSlot } from "../engine/battle.js";
-import { allChapters } from "../data/index.js";
+import { skillsForSlot, SKILL_RARITY } from "../engine/battle.js";
+import SkillGachaBox from "../components/SkillGachaBox.jsx";
 
-// 未所持スキルの入手方法（どのボスを倒すともらえるか）
+// 未所持スキルの入手方法（スキルガチャ）
 function dropHint(s) {
-  if (s.unlock !== "boss") return "🔒 未所持";
-  if (s.bossDrop === "final") return "🔒 ラスボスで入手";
-  const ch = allChapters().find((c) => c.id === s.bossDrop);
-  return ch ? `🔒 「${ch.name}」の章ボスで入手` : "🔒 章ボスで入手";
+  const rar = SKILL_RARITY[s.rarity];
+  return rar ? `🔒 ガチャ（${rar.label}）` : "🔒 ガチャで入手";
 }
 
-export default function Skill({ player, onEquip, onBack }) {
+export default function Skill({ player, onEquip, onPullSkill, onBack }) {
   const owned = player.ownedSkills || ["time2x", "ultimate"];
   const equip = player.equip || { 1: "time2x", 2: "ultimate" };
 
@@ -25,6 +23,9 @@ export default function Skill({ player, onEquip, onBack }) {
       <div className="content">
         <div className="pg-ttl">✨ スキルセット</div>
         <div className="pg-sub">バトルでSPを使って発動するスキルを、スロットごとに選ぼう</div>
+
+        {/* スキルガチャ（クリスタルで新しいスキルを入手） */}
+        <SkillGachaBox player={player} onPull={onPullSkill} />
 
         {[1, 2].map((slot) => {
           const cands = skillsForSlot(slot);
@@ -75,7 +76,7 @@ export default function Skill({ player, onEquip, onBack }) {
 
         <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", textAlign: "center", lineHeight: 1.6, marginTop: 4 }}>
           ※ スキルはバトル中、SPがたまると発動できます。<br />
-          新しいスキルは、章ボス・ラスボスを倒すと1つずつもらえます（全10種）。
+          新しいスキルは、上の<b style={{ color: "#67e8f9" }}>スキルガチャ</b>（クリスタル💎）で手に入ります（全{skillsForSlot(1).length + skillsForSlot(2).length}種）。クリスタルは章ボス・ラスボスを倒すと貯まります。
         </div>
       </div>
     </div>

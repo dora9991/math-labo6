@@ -151,12 +151,12 @@ export default function Shop({ player, onBuy, onDiscard, onHeal, onPullGacha, on
           </div>
         ))}
 
-        {/* スキルはボス撃破でもらえる（ショップでは売っていない） */}
+        {/* スキルは「スキル」画面のスキルガチャ（クリスタル）で入手 */}
         <div className="glass" style={{ padding: "12px 14px" }}>
           <div style={{ fontSize: 12, fontWeight: 900, color: "#fff", marginBottom: 4 }}>✨ スキルについて</div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,.55)", lineHeight: 1.6 }}>
-            スキルはショップでは売っていません。<b style={{ color: "#fde047" }}>章ボス・ラスボスを倒すと1つずつもらえます</b>（全部で10種）。
-            手に入れたら「スキル」画面で装備しよう。
+            スキルは<b style={{ color: "#67e8f9" }}>「スキル」画面のスキルガチャ</b>（クリスタル💎）で手に入ります。
+            クリスタルは<b style={{ color: "#fde047" }}>章ボス・ラスボスを倒す</b>と貯まります。
           </div>
         </div>
 

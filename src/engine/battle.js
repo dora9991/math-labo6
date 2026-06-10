@@ -102,79 +102,145 @@ export function calcDamage(atk, combo) {
 export const SP_MAX = 10;
 
 // スキルはスロット1（SP5枠）・スロット2（SP10枠）に1つずつ装備する。
-// 全10種：最初から各スロット1つ（計2）＋ボス撃破でもらう8つ（各章ボス7＋ラスボス）。
-//   unlock:"default" … 最初から所持
-//   unlock:"boss"    … ボスを初めてたおすと入手（bossDrop: 章ID または "final"=ラスボス）
-//   kind  … バトル側の効果分岐
-//     "time2x" … 回答時間が timeMult 倍（既定2）
-//     "regen"  … turns ターンのあいだ 毎ターン pct 割合ずつ回復し続ける
-//     "dmgup"  … turns ターンのあいだ 与ダメージ mult 倍
-//     "guard"  … turns ターンのあいだ 受けるダメージを reduce 倍に軽減
-//     "ultimate" … 基本ダメージの mult 倍を直接あたえる
-//     "drain"    … mult 倍ダメージ＋与ダメージの drain 割合ぶんHP回復
+// 全31種。最初から各スロット1つ（time2x / ultimate）所持、残りはスキルガチャ（クリスタル）で入手。
+//   rarity … "n" | "r" | "sr" | "ssr"（ガチャの排出レア度。defで重み・色を定義）
+//   slot   … 1（SP5）または 2（SP10）。equip はスロットごとに1つ。
+//   kind   … バトル側の効果分岐（Battle.jsx の useSkill が解釈）:
+//     "time2x"    … 回答時間が timeMult 倍（即時）
+//     "heal"      … HP を最大の value 割合ぶん回復（即時）
+//     "regen"     … turns ターン 毎ターン pct 割合ずつ回復し続ける
+//     "dmgup"     … turns ターン 与ダメージ mult 倍
+//     "guard"     … turns ターン 受けるダメージを reduce 倍に軽減（reduce<=0 で完全無敵）
+//     "ultimate"  … 基本ダメージの mult 倍を直接あたえる
+//     "drain"     … mult 倍ダメージ＋与ダメージの drain 割合ぶん HP 回復
+//     "timebuff"  … turns 問のあいだ 制限時間 ×mult（inf:true で実質無制限）
+//     "poison"    … turns ターン 毎ターン敵に mult×基本ダメージの継続ダメージ
+//     "combokeep" … turns ターン 1回ミスしてもコンボが切れない
+//     "doublenext"… 次の正解のダメージを2回ぶんあたえる
+//     "critup"    … turns ターン コンボ／会心ボーナスが2倍
+//     "counter"   … turns ターン 被弾するたび mult×基本ダメージで反撃
+//     "revive"    … HP0になっても一度だけ全回復で復活（1バトル1回）
+//     "winbonus"  … 勝利時に coins / crystals を追加で獲得（combat 効果なし）
+//     "burst"     … ultimate＋dmgup を同時付与（mult/buffMult/buffTurns）
 export const BATTLE_SKILLS = [
-  // ── スロット1（SP5枠）：5種（既定1＋ボス4） ──
-  {
-    id: "time2x", slot: 1, cost: 5, kind: "time2x", timeMult: 2, unlock: "default",
-    name: "タイムスロー", icon: "⏳",
-    desc: "回答時間が2倍になる", color: "#38bdf8",
-  },
-  {
-    id: "regen", slot: 1, cost: 5, kind: "regen", turns: 3, pct: 0.15, unlock: "boss", bossDrop: "c1",
-    name: "リジェネ", icon: "🌿",
-    desc: "3ターンのあいだ 毎ターンHPを15%ずつ回復し続ける", color: "#34d399",
-  },
-  {
-    id: "barrier", slot: 1, cost: 5, kind: "guard", reduce: 0.5, turns: 2, unlock: "boss", bossDrop: "c3",
-    name: "バリア", icon: "🔰",
-    desc: "2ターンのあいだ 受けるダメージが1/2", color: "#60a5fa",
-  },
-  {
-    id: "haste", slot: 1, cost: 5, kind: "time2x", timeMult: 2.5, unlock: "boss", bossDrop: "c5",
-    name: "ヘイスト", icon: "💨",
-    desc: "回答時間が2.5倍になる", color: "#22d3ee",
-  },
-  {
-    id: "overdrive", slot: 1, cost: 5, kind: "dmgup", turns: 3, mult: 2, unlock: "boss", bossDrop: "c7",
-    name: "オーバードライブ", icon: "⚙️",
-    desc: "3ターンのあいだ 与ダメージが2倍", color: "#fb923c",
-  },
-  // ── スロット2（SP10枠）：5種（既定1＋ボス4） ──
-  {
-    id: "ultimate", slot: 2, cost: 10, kind: "ultimate", mult: 7, unlock: "default",
-    name: "必殺技", icon: "💥",
-    desc: "基本ダメージの7倍を直接あたえる", color: "#f472b6",
-  },
-  {
-    id: "drain", slot: 2, cost: 10, kind: "drain", mult: 8, drain: 0.4, unlock: "boss", bossDrop: "c2",
-    name: "ドレイン", icon: "🧛",
-    desc: "8倍ダメージ＋与えたダメージの40%ぶんHP回復", color: "#a78bfa",
-  },
-  {
-    id: "meteor", slot: 2, cost: 10, kind: "ultimate", mult: 12, unlock: "boss", bossDrop: "c4",
-    name: "メテオ", icon: "☄️",
-    desc: "基本ダメージの12倍を直接あたえる", color: "#f97316",
-  },
-  {
-    id: "judgment", slot: 2, cost: 10, kind: "drain", mult: 9, drain: 0.5, unlock: "boss", bossDrop: "c6",
-    name: "天罰", icon: "⚡",
-    desc: "9倍ダメージ＋与えたダメージの50%ぶんHP回復", color: "#facc15",
-  },
-  {
-    id: "ultima", slot: 2, cost: 10, kind: "ultimate", mult: 15, unlock: "boss", bossDrop: "final",
-    name: "アルティマ", icon: "🌌",
-    desc: "基本ダメージの15倍を直接あたえる（ラスボスの力）", color: "#e879f9",
-  },
+  // ── スロット1（SP5枠）──
+  { id: "time2x",    slot: 1, cost: 5, rarity: "n", kind: "time2x", timeMult: 2,
+    name: "タイムスロー", icon: "⏳", color: "#38bdf8", desc: "回答時間が2倍になる" },
+  { id: "quickheal", slot: 1, cost: 5, rarity: "n", kind: "heal", value: 0.2,
+    name: "クイックヒール", icon: "💚", color: "#86efac", desc: "HPを最大の20%回復する" },
+  { id: "barrier",   slot: 1, cost: 5, rarity: "n", kind: "guard", reduce: 0.5, turns: 2,
+    name: "ガード", icon: "🛡️", color: "#60a5fa", desc: "2ターン 受けるダメージが1/2" },
+  { id: "powerup",   slot: 1, cost: 5, rarity: "n", kind: "dmgup", turns: 2, mult: 1.5,
+    name: "ちからため", icon: "💪", color: "#fcd34d", desc: "2ターン 与ダメージが1.5倍" },
+  { id: "fire",      slot: 1, cost: 5, rarity: "n", kind: "ultimate", mult: 3,
+    name: "ファイア", icon: "🔥", color: "#fb7185", desc: "基本ダメージの3倍の一撃" },
+  { id: "regen",     slot: 1, cost: 5, rarity: "n", kind: "regen", turns: 3, pct: 0.15,
+    name: "リジェネ", icon: "🌿", color: "#34d399", desc: "3ターン 毎ターンHPを15%ずつ回復" },
+  { id: "lucky",     slot: 1, cost: 5, rarity: "n", kind: "winbonus", coins: 80,
+    name: "ついてる", icon: "🍀", color: "#4ade80", desc: "勝つとコイン+80（戦闘効果なし）" },
+  { id: "focus",     slot: 1, cost: 5, rarity: "n", kind: "timebuff", turns: 3, mult: 1.5,
+    name: "しゅうちゅう", icon: "👓", color: "#7dd3fc", desc: "次の3問 制限時間が1.5倍" },
+  { id: "haste",     slot: 1, cost: 5, rarity: "r", kind: "time2x", timeMult: 2.5,
+    name: "ヘイスト", icon: "💨", color: "#22d3ee", desc: "回答時間が2.5倍になる" },
+  { id: "overdrive", slot: 1, cost: 5, rarity: "r", kind: "dmgup", turns: 3, mult: 2,
+    name: "オーバードライブ", icon: "⚙️", color: "#fb923c", desc: "3ターン 与ダメージが2倍" },
+  { id: "burstheal", slot: 1, cost: 5, rarity: "r", kind: "heal", value: 0.5,
+    name: "バーストヒール", icon: "✨", color: "#4ade80", desc: "HPを最大の50%回復する" },
+  { id: "ironwall",  slot: 1, cost: 5, rarity: "r", kind: "guard", reduce: 0.34, turns: 3,
+    name: "アイアンウォール", icon: "🧱", color: "#3b82f6", desc: "3ターン 受けるダメージが約1/3" },
+  { id: "doubleup",  slot: 1, cost: 5, rarity: "r", kind: "doublenext",
+    name: "ダブルアップ", icon: "✌️", color: "#facc15", desc: "次の正解のダメージを2回ぶん" },
+  { id: "poison",    slot: 1, cost: 5, rarity: "r", kind: "poison", turns: 3, mult: 1.2,
+    name: "ポイズン", icon: "☠️", color: "#a3e635", desc: "敵に毒：3ターン継続ダメージ" },
+  { id: "combokeep", slot: 1, cost: 5, rarity: "r", kind: "combokeep", turns: 3,
+    name: "コンボキープ", icon: "🔗", color: "#fbbf24", desc: "3ターン 1回ミスしてもコンボ維持" },
+
+  // ── スロット2（SP10枠）──
+  { id: "ultimate",  slot: 2, cost: 10, rarity: "n", kind: "ultimate", mult: 7,
+    name: "必殺技", icon: "💥", color: "#f472b6", desc: "基本ダメージの7倍を直接あたえる" },
+  { id: "drain",     slot: 2, cost: 10, rarity: "r", kind: "drain", mult: 8, drain: 0.4,
+    name: "ドレイン", icon: "🧛", color: "#a78bfa", desc: "8倍ダメージ＋40%ぶんHP回復" },
+  { id: "meteor",    slot: 2, cost: 10, rarity: "sr", kind: "ultimate", mult: 12,
+    name: "メテオ", icon: "☄️", color: "#f97316", desc: "基本ダメージの12倍を直接あたえる" },
+  { id: "judgment",  slot: 2, cost: 10, rarity: "sr", kind: "drain", mult: 9, drain: 0.5,
+    name: "天罰", icon: "⚡", color: "#facc15", desc: "9倍ダメージ＋50%ぶんHP回復" },
+  { id: "fullheal",  slot: 2, cost: 10, rarity: "sr", kind: "heal", value: 1.0,
+    name: "フルヒール", icon: "🍶", color: "#22c55e", desc: "HPを全回復する（100%）" },
+  { id: "invincible",slot: 2, cost: 10, rarity: "sr", kind: "guard", reduce: 0, turns: 1,
+    name: "インビンシブル", icon: "🌟", color: "#fde047", desc: "1ターン 完全無敵（被ダメ0）" },
+  { id: "critup",    slot: 2, cost: 10, rarity: "sr", kind: "critup", turns: 3,
+    name: "クリティカル", icon: "🎯", color: "#fb7185", desc: "3ターン コンボ会心ボーナス2倍" },
+  { id: "counter",   slot: 2, cost: 10, rarity: "sr", kind: "counter", turns: 3, mult: 2,
+    name: "カウンター", icon: "🪃", color: "#38bdf8", desc: "3ターン 被弾するたび反撃" },
+  { id: "thunder",   slot: 2, cost: 10, rarity: "sr", kind: "burst", mult: 10, buffMult: 1.5, buffTurns: 2,
+    name: "サンダーストーム", icon: "🌩️", color: "#818cf8", desc: "10倍の一撃＋2ターン与ダメ1.5倍" },
+  { id: "timefreeze",slot: 2, cost: 10, rarity: "sr", kind: "timebuff", turns: 2, inf: true,
+    name: "タイムフリーズ", icon: "⏱️", color: "#67e8f9", desc: "次の2問 制限時間なし" },
+  { id: "ultima",    slot: 2, cost: 10, rarity: "ssr", kind: "ultimate", mult: 15,
+    name: "アルティマ", icon: "🌌", color: "#e879f9", desc: "基本ダメージの15倍を直接あたえる" },
+  { id: "phoenix",   slot: 2, cost: 10, rarity: "ssr", kind: "revive",
+    name: "フェニックス", icon: "🕊️", color: "#fb923c", desc: "HP0でも1回だけ全回復で復活" },
+  { id: "genocide",  slot: 2, cost: 10, rarity: "ssr", kind: "drain", mult: 20, drain: 0.3,
+    name: "ジェノサイド", icon: "💀", color: "#f43f5e", desc: "20倍ダメージ＋30%ぶんHP回復" },
+  { id: "zerocount", slot: 2, cost: 10, rarity: "ssr", kind: "burst", mult: 0, buffMult: 1.5, buffTurns: 99, timeInf: 99,
+    name: "ゼロカウント", icon: "⌛", color: "#c4b5fd", desc: "以降ずっと時間無制限＋与ダメ1.5倍" },
+  { id: "crystalluck",slot: 2, cost: 10, rarity: "ssr", kind: "winbonus", coins: 150, crystals: 1,
+    name: "クリスタルラック", icon: "💎", color: "#67e8f9", desc: "勝つとコイン+150＆クリスタル+1" },
+  { id: "overload",  slot: 2, cost: 10, rarity: "ssr", kind: "burst", mult: 0, buffMult: 3, buffTurns: 5, regenPct: 0.1, regenTurns: 5,
+    name: "オーバーロード", icon: "👑", color: "#fbbf24", desc: "5ターン 与ダメ3倍＋毎ターンHP10%回復" },
 ];
+
+// ── スキルガチャ：レア度の定義（重み＝出やすさ%、色・ラベル） ──
+export const SKILL_RARITY = {
+  n:   { key: "n",   label: "ノーマル",       color: "#94a3b8", weight: 60, refund: 50 },
+  r:   { key: "r",   label: "レア",           color: "#38bdf8", weight: 28, refund: 150 },
+  sr:  { key: "sr",  label: "スーパーレア",   color: "#a78bfa", weight: 10, refund: 400 },
+  ssr: { key: "ssr", label: "ウルトラレア",   color: "#fde047", weight: 2,  refund: 1000 },
+};
+export const SKILL_RARITY_ORDER = ["n", "r", "sr", "ssr"];
+
+// スキルガチャの値段（クリスタル）。10連は1回ぶんお得。
+export const SKILL_GACHA_COST_1 = 50;
+export const SKILL_GACHA_COST_10 = 450;
 
 /** id からスキル定義を引く */
 export function findSkill(id) {
   return BATTLE_SKILLS.find((s) => s.id === id) || null;
 }
 
-/** 章ボス(chapterId)が落とすスキルを返す（無ければ null） */
-export function skillForBossDrop(chapterId) {
-  return BATTLE_SKILLS.find((s) => s.unlock === "boss" && s.bossDrop === chapterId) || null;
+/** レア度キーのスキル一覧 */
+export function skillsOfRarity(rarity) {
+  return BATTLE_SKILLS.filter((s) => s.rarity === rarity);
+}
+
+/**
+ * スキルガチャを1回引く → 当たったスキルの id。
+ *  レア度を重みで抽選 → そのレア度のスキルから等確率で1つ。
+ */
+export function rollSkillGacha(rand = Math.random) {
+  const defs = SKILL_RARITY_ORDER.map((k) => SKILL_RARITY[k]);
+  const total = defs.reduce((s, d) => s + d.weight, 0);
+  let t = rand() * total;
+  let chosen = defs[0];
+  for (const d of defs) { if ((t -= d.weight) < 0) { chosen = d; break; } }
+  const pool = skillsOfRarity(chosen.key);
+  return (pool[Math.floor(rand() * pool.length)] || BATTLE_SKILLS[0]).id;
+}
+
+/**
+ * 10連を引く（id配列を返す）。10連は最低1つ R 以上を保証する。
+ */
+export function rollSkillGacha10(rand = Math.random) {
+  const ids = Array.from({ length: 10 }, () => rollSkillGacha(rand));
+  const hasRPlus = ids.some((id) => {
+    const r = findSkill(id)?.rarity;
+    return r === "r" || r === "sr" || r === "ssr";
+  });
+  if (!hasRPlus) {
+    const rPool = skillsOfRarity("r");
+    ids[9] = (rPool[Math.floor(rand() * rPool.length)] || BATTLE_SKILLS[0]).id;
+  }
+  return ids;
 }
 
 /** スロット番号(1|2)のスキル候補を返す */
