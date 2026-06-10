@@ -1,0 +1,22 @@
+{
+  "name": "math-game",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "中学数学ゲームアプリ（生徒用）。エンジン・データ・保存層を分離した構成。",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "vite build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "gh-pages": "^6.3.0",
+    "vite": "^5.4.0"
+  }
+}
