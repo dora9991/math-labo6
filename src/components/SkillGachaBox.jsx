@@ -1,13 +1,13 @@
 // ============================================================
 // SkillGachaBox.jsx — スキルガチャ（クリスタルで引く）
-//  ・単発（💎50）と 10連（💎450）。10連は最低1つ R 以上を保証。
+//  ・単発（💎10）と まとめ引き 11連（💎100＝10回ぶんで1回おまけ）。最低1つ R 以上を保証。
 //  ・引くと結果をカードで一覧表示。新規は「NEW」、被りはコイン還元を表示。
 //  ・所持済みのスキルはコレクションとして下に一覧（装備は「スキル」画面で）。
 // ============================================================
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
-  BATTLE_SKILLS, SKILL_RARITY, SKILL_GACHA_COST_1, SKILL_GACHA_COST_10,
+  BATTLE_SKILLS, SKILL_RARITY, SKILL_GACHA_COST_1, SKILL_GACHA_MULTI_COST, SKILL_GACHA_MULTI_N,
 } from "../engine/battle.js";
 
 const RARITY_LABEL_ORDER = ["ssr", "sr", "r", "n"];
@@ -25,7 +25,7 @@ export default function SkillGachaBox({ player, onPull }) {
   useEffect(() => () => clearTimers(), []);
 
   function pull(count) {
-    const cost = count === 10 ? SKILL_GACHA_COST_10 : SKILL_GACHA_COST_1;
+    const cost = count > 1 ? SKILL_GACHA_MULTI_COST : SKILL_GACHA_COST_1;
     if (crystals < cost) return;
     const res = onPull?.(count);
     if (!res) return;
@@ -37,7 +37,7 @@ export default function SkillGachaBox({ player, onPull }) {
   function close() { clearTimers(); setStage(null); setResults(null); }
 
   const can1 = crystals >= SKILL_GACHA_COST_1;
-  const can10 = crystals >= SKILL_GACHA_COST_10;
+  const canMulti = crystals >= SKILL_GACHA_MULTI_COST;
 
   const btn = (ok) => ({
     flex: 1, padding: "13px 10px", borderRadius: 12, border: "none",
@@ -53,7 +53,7 @@ export default function SkillGachaBox({ player, onPull }) {
       </div>
       <div style={{ fontSize: 11, color: "rgba(255,255,255,.55)", lineHeight: 1.6, marginBottom: 10 }}>
         クリスタル💎でバトルスキルが当たる！ <b style={{ color: "#fde047" }}>ウルトラレアは2%</b>。
-        10連は最低1つ <b style={{ color: "#38bdf8" }}>レア以上</b> 確定。被りはコインに還元。
+        まとめ引きは <b style={{ color: "#67e8f9" }}>{SKILL_GACHA_MULTI_N}連</b>（{SKILL_GACHA_COST_1 * 10}クリスタルで1回おまけ）＆最低1つ <b style={{ color: "#38bdf8" }}>レア以上</b> 確定。被りはコインに還元。
       </div>
 
       {/* クリスタル残高 */}
@@ -66,8 +66,8 @@ export default function SkillGachaBox({ player, onPull }) {
         <button onClick={() => pull(1)} disabled={!can1} data-sfx="none" style={btn(can1)}>
           単発<br /><span style={{ fontSize: 11 }}>💎{SKILL_GACHA_COST_1}</span>
         </button>
-        <button onClick={() => pull(10)} disabled={!can10} data-sfx="none" style={btn(can10)}>
-          10連<br /><span style={{ fontSize: 11 }}>💎{SKILL_GACHA_COST_10}</span>
+        <button onClick={() => pull(SKILL_GACHA_MULTI_N)} disabled={!canMulti} data-sfx="none" style={btn(canMulti)}>
+          {SKILL_GACHA_MULTI_N}連<br /><span style={{ fontSize: 11 }}>💎{SKILL_GACHA_MULTI_COST}（1回おまけ）</span>
         </button>
       </div>
 

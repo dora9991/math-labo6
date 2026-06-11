@@ -41,8 +41,9 @@ import Admin from "./screens/Admin.jsx";
 import Character from "./screens/Character.jsx";
 import HowTo from "./screens/HowTo.jsx";
 import Clinic from "./screens/Clinic.jsx";
+import Collection from "./screens/Collection.jsx";
 import { findItem, treatCost } from "./engine/items.js";
-import { getPlayerBattleStats, BATTLE_SKILLS, battleBonuses, isCalcKingCleared, CALC_KING_CLEAR_STREAK, findSkill, rollSkillGacha, rollSkillGacha10, SKILL_RARITY, SKILL_GACHA_COST_1, SKILL_GACHA_COST_10 } from "./engine/battle.js";
+import { getPlayerBattleStats, BATTLE_SKILLS, battleBonuses, isCalcKingCleared, CALC_KING_CLEAR_STREAK, findSkill, rollSkillGacha, rollSkillGachaMulti, SKILL_RARITY, SKILL_GACHA_COST_1, SKILL_GACHA_MULTI_COST, SKILL_GACHA_MULTI_N } from "./engine/battle.js";
 import { MONSTERS } from "./data/monsters.js";
 import { foldSequence } from "./engine/unitMastery.js";
 import { isUnitMonsterUnlocked } from "./engine/unlock.js";
@@ -397,9 +398,10 @@ export default function App() {
   //  当たったスキルを所持に追加。既に所持していれば「被り」→ レア度に応じてコイン還元。
   //  返り値：演出用の配列 [{ id, skill, isNew, refund }]（クリスタル不足なら null）。
   function pullSkillGacha(count = 1) {
-    const cost = count === 10 ? SKILL_GACHA_COST_10 : SKILL_GACHA_COST_1;
+    const isMulti = count > 1; // まとめ引き（11連）
+    const cost = isMulti ? SKILL_GACHA_MULTI_COST : SKILL_GACHA_COST_1;
     if ((data.player.crystals ?? 0) < cost) return null;
-    const ids = count === 10 ? rollSkillGacha10() : [rollSkillGacha()];
+    const ids = isMulti ? rollSkillGachaMulti() : [rollSkillGacha()];
 
     // 既存の所持状態をもとに「新規 / 被り」を判定（連続で引いた分も加味）
     const already = new Set(data.player.ownedSkills || []);
@@ -804,6 +806,11 @@ export default function App() {
     return <Shop player={data.player} onBuy={buyItem} onDiscard={discardItem} onHeal={healPlayer} onPullGacha={pullGacha} onEquipGear={equipGear} onBack={() => setScreen("home")} />;
   }
 
+  // モンスター図鑑（倒したモンスターのコレクション）
+  if (screen === "collection") {
+    return <Collection player={data.player} records={data.records} onBack={() => setScreen("home")} />;
+  }
+
   // スキルセット画面（スロット1/2に装備するスキルを選ぶ）
   if (screen === "skill") {
     return <Skill player={data.player} onEquip={setEquip} onPullSkill={pullSkillGacha} onBack={() => setScreen("home")} />;
@@ -960,6 +967,7 @@ export default function App() {
       onStartGolden={startGolden}
       onShop={() => setScreen("shop")}
       onSkill={() => setScreen("skill")}
+      onCollection={() => setScreen("collection")}
       onDetail={() => setScreen("status")}
       onHowTo={() => setScreen("howto")}
       onCharacter={() => setScreen("character")}

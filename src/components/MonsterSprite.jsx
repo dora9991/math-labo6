@@ -1,9 +1,30 @@
 // ============================================================
-// MonsterSprite.jsx — モンスターのSVGを描画し、状態アニメを当てる部品
+// MonsterSprite.jsx — モンスターを描画し、状態アニメを当てる部品
 //   state: "idle" | "damage" | "attack" | "dead"
 //   animKey: 値が変わるたびにアニメを再生（被ダメを何度も再生するため）
-// SVGは自前のデザイン資産なので dangerouslySetInnerHTML で描画する。
+//   mini: true で小さく（コレクション図鑑・敵選択など）
+//   silhouette: true で黒いシルエット表示（未撃破のコレクション用）
+// 画像（webp）があれば画像を使い、無ければ自前SVGアートにフォールバック。
+// 画像は数が少ないので id ごとの hue で「色違い」表示して個体差を出す。
 // ============================================================
+import { useState, useEffect } from "react";
+import { monsterImageUrl, monsterImgFilter } from "../data/monsterImages.js";
+import { transparentBg } from "../data/transparentBg.js";
+
+// 画像URLを「市松背景を透明化した」URLに変える小フック（処理結果はキャッシュ）
+function useTransparent(url) {
+  const init = url ? transparentBg(url) : null;
+  const [src, setSrc] = useState(typeof init === "string" ? init : url);
+  useEffect(() => {
+    if (!url) return;
+    const r = transparentBg(url);
+    if (typeof r === "string") { setSrc(r); return; }
+    let alive = true;
+    r.then((d) => { if (alive) setSrc(d); });
+    return () => { alive = false; };
+  }, [url]);
+  return src;
+}
 
 const STATE_CLASS = {
   idle: "idle-anim",
@@ -12,12 +33,38 @@ const STATE_CLASS = {
   dead: "dead-anim",
 };
 
-export default function MonsterSprite({ monster, state = "idle", animKey = 0, mini = false }) {
+export default function MonsterSprite({ monster, state = "idle", animKey = 0, mini = false, silhouette = false }) {
+  // ※フックは早期returnより前に呼ぶ（呼び出し順を一定に保つ）
+  const rawUrl = monster ? monsterImageUrl(monster, mini ? "small" : "full") : null;
+  const url = useTransparent(rawUrl);
   if (!monster) return null;
   const bodyClass = STATE_CLASS[state] || "idle-anim";
   const flash = state === "damage" || state === "dead" ? " flash-anim" : "";
-  const html = `${monster.svgDefs}<g class="${bodyClass}">${monster.svg}</g>`;
+  const size = mini ? 64 : 200; // バトルは大きめに表示
 
+  // 画像があれば画像で描画（色違い hue ＋ 状態アニメ）
+  if (rawUrl) {
+    const filter = silhouette
+      ? "brightness(0) opacity(0.55)"
+      : monsterImgFilter(monster);
+    return (
+      <img
+        key={animKey}
+        className={bodyClass + flash}
+        src={url}
+        alt={monster.name || ""}
+        draggable={false}
+        style={{
+          width: size, height: size, objectFit: "contain",
+          filter, transformBox: "border-box", transformOrigin: "center bottom",
+          imageRendering: "auto", userSelect: "none", pointerEvents: "none",
+        }}
+      />
+    );
+  }
+
+  // フォールバック：自前SVGアート
+  const html = `${monster.svgDefs}<g class="${bodyClass}">${monster.svg}</g>`;
   return (
     <>
       {monster.idleExtra ? <style>{monster.idleExtra}</style> : null}
@@ -26,7 +73,7 @@ export default function MonsterSprite({ monster, state = "idle", animKey = 0, mi
         className={(mini ? "" : "mon-svg") + flash}
         viewBox="0 0 140 140"
         xmlns="http://www.w3.org/2000/svg"
-        style={mini ? { width: 64, height: 64, overflow: "visible" } : undefined}
+        style={mini ? { width: size, height: size, overflow: "visible" } : undefined}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </>

@@ -189,7 +189,7 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
                   )}
                   {!weak && summary.crystal === 0 && (
                     <div style={{ fontSize: 11, color: "#0e7490", fontWeight: 700, marginTop: 5 }}>
-                      💎 クリスタルは「星1つ以上 ＆ 正答率50%以上」でもらえます
+                      💎 クリスタルは「星1つ以上 ＆ 正答率60%以上」でもらえます
                     </div>
                   )}
                   {summary.mult < 1 && (

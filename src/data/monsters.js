@@ -15,6 +15,7 @@
 
 import { allChapters } from "./index.js";
 import { playerAtkForLevel, playerHpForLevel, enemyAtkForLevel } from "../engine/battle.js";
+import { hueFromId } from "./monsterImages.js";
 
 // ★RPG進行は全学年（中1→中2→中3）を1本の冒険としてつなぐ。
 const RPG_CHAPTERS = allChapters();
@@ -145,8 +146,45 @@ const ART_NAME = {
   calc: "スウチ", balance: "テンビン", geo: "ズケイ", wave: "ナミ", dice: "サイコ",
   prime: "ソスウ", fraction: "ブンスウ", angle: "カクド", volume: "リッタイ", speed: "スピード",
 };
-// 名前のしっぽ（小単元ごとに循環して個体差を出す）
+// 名前のしっぽ（小単元ごとに循環して個体差を出す）※NAME_BY_IDに無いidのフォールバック用
 const NAME_SUFFIX = ["ビット", "リン", "ガミ", "イーター", "ドラゴ", "レオン", "マル", "ローム", "ゴン", "ピー", "ネーガ", "クラゲ"];
+
+// ── 小単元モンスターの固有名（モンスターidごと）──────────────
+//   「モンスター画像生成プロンプト集（全106体）」と一致させた、バラバラの固有名。
+//   ここに無いid（章ボス・魔王・サンプル・想定外の単元）は従来の自動命名にフォールバック。
+const NAME_BY_ID = {
+  // ── 中1 ──
+  m_c1_u1: "スウチビット", m_c1_u2: "ソスウニョロ", m_c1_u3: "スピードダッシュ",
+  m_c1_u4: "スウチバイト", m_c1_u5: "ソスウプライ", m_c1_u6: "スピードハヤテ",
+  m_c2_v1: "ブンスウブンブン", m_c2_v2: "テンビンリン", m_c2_v3: "スウチチップ",
+  m_c2_v4: "ブンスウハンブン", m_c2_v5: "テンビンヤジロ",
+  m_c3_e1: "テンビンハカリ", m_c3_e2: "ブンスウスラリ", m_c3_e3: "ソスウスネーク",
+  m_c3_e4: "テンビンユラリ", m_c3_e5: "ブンスウプニ",
+  m_c4_h1: "ナミウェイブ", m_c4_h2: "スピードビュン", m_c4_h3: "ズケイリス",
+  m_c4_h4: "ナミザブン", m_c4_h5: "スピードシッツウ",
+  m_c5_z1: "カクドテンシ", m_c5_z2: "ズケイカクン", m_c5_z3: "ブンスウクワリ", m_c5_z4: "カクドハネル",
+  m_c6_k1: "リッタイハコ", m_c6_k2: "ズケイハキサ", m_c6_k3: "サイコロコ", m_c6_k4: "リッタイリッポー",
+  m_c7_d1: "サイコロール", m_c7_d2: "ソスウロボ", m_c7_d3: "ナミプカ",
+  // ── 中2 ──
+  m_g2c1_g2c1u1: "スウチカ", m_g2c1_g2c1u2: "テンビンツリア", m_g2c1_g2c1u3: "ソスウトグロ",
+  m_g2c1_g2c1u4: "スウチロジック", m_g2c1_g2c1u5: "テンビンウェイト", m_g2c1_g2c1u6: "ソスウニシキ",
+  m_g2c2_g2c2u1: "テンビンポイズ", m_g2c2_g2c2u2: "スウチデジ", m_g2c2_g2c2u3: "ブンスウプブン",
+  m_g2c3_g2c3u1: "ナミウズ", m_g2c3_g2c3u2: "スピードカケル", m_g2c3_g2c3u3: "スウチピコ",
+  m_g2c4_g2c4u1: "ズケイゲロ", m_g2c4_g2c4u2: "カクドエンジェ",
+  m_g2c5_g2c5u1: "ズケイジュエル", m_g2c5_g2c5u2: "カクドビシャ", m_g2c5_g2c5u3: "ブンスウモチ",
+  m_g2c6_g2c6u1: "サイコビップ", m_g2c6_g2c6u2: "ソスウヘビー", m_g2c6_g2c6u3: "ナミシブキ",
+  // ── 中3 ──
+  m_g3c1_g3c1u1: "スウチコード", m_g3c1_g3c1u2: "テンビンミコ",
+  m_g3c2_g3c2u1: "ソスウジグザ", m_g3c2_g3c2u2: "ブンスウピンキー", m_g3c2_g3c2u3: "スウチボード",
+  m_g3c2_g3c2u4: "ソスウイング", m_g3c2_g3c2u5: "ブンスウトロケ",
+  m_g3c3_g3c3u1: "テンビンセイレイ", m_g3c3_g3c3u2: "ブンスウハーフ", m_g3c3_g3c3u3: "スウチカイ",
+  m_g3c3_g3c3u4: "テンビンカクム", m_g3c3_g3c3u5: "ブンスウヌメロ",
+  m_g3c4_g3c4u1: "ナミリップル", m_g3c4_g3c4u2: "スピードバーン", m_g3c4_g3c4u3: "ズケイポリゴ", m_g3c4_g3c4u4: "ナミミナト",
+  m_g3c5_g3c5u1: "ズケイシャープ", m_g3c5_g3c5u2: "カクドオウギ", m_g3c5_g3c5u3: "リッタイブロック",
+  m_g3c6_g3c6u1: "カクドスイチョク", m_g3c6_g3c6u2: "ズケイキラリ", m_g3c6_g3c6u3: "ナミトロロ",
+  m_g3c7_g3c7u1: "ズケイトガリ", m_g3c7_g3c7u2: "リッタイボックス", m_g3c7_g3c7u3: "カクドカクカク", m_g3c7_g3c7u4: "ズケイクォーツ",
+  m_g3c8_g3c8u1: "サイコガチャ", m_g3c8_g3c8u2: "ソスウシャルル", m_g3c8_g3c8u3: "ナミビチャ",
+};
 
 // 敵の「役割（タイプ）」。基準のHP・攻撃力にかける倍率で、強さの個性を出す。
 //  → HP・攻撃力が一定の増え方にならず、硬い敵・もろいが痛い敵などの凸凹が生まれる。
@@ -331,4 +369,19 @@ for (const g of GRADE_WORLDS) {
     idleExtra: sa.idleExtra,
     deathColors: sa.deathColors,
   });
+}
+
+// ── 仕上げ：固有名の上書き ＆ 画像（アート種別・色違いhue）の付与 ──
+//   ・name: NAME_BY_ID にあれば固有名へ（無ければ自動命名のまま）。
+//   ・imgArt: 表示する画像のアート種別（finalBoss→maou / sample→sample / chapterBoss→boss / それ以外は art）。
+//   ・imgHue: 画像のリカラー角度。画像は数が少ないので id ごとに色を変えて個体差を出す。
+//     ただし魔王・サンプルは本来の色のまま見せたいので 0（リカラーなし）。
+for (const m of MONSTERS) {
+  if (NAME_BY_ID[m.id]) m.name = NAME_BY_ID[m.id];
+  m.imgArt =
+    m.kind === "finalBoss" ? "maou" :
+    m.kind === "sample" ? "sample" :
+    m.kind === "chapterBoss" ? "boss" :
+    m.art;
+  m.imgHue = (m.kind === "finalBoss" || m.kind === "sample") ? 0 : hueFromId(m.id);
 }

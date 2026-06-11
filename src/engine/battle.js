@@ -199,9 +199,11 @@ export const SKILL_RARITY = {
 };
 export const SKILL_RARITY_ORDER = ["n", "r", "sr", "ssr"];
 
-// スキルガチャの値段（クリスタル）。10連は1回ぶんお得。
+// スキルガチャの値段（クリスタル）。
+//  単発=10。まとめ引きは「10回ぶんの値段(100)で11回」回せる（1回おまけ）。
 export const SKILL_GACHA_COST_1 = 10;
-export const SKILL_GACHA_COST_10 = 90;
+export const SKILL_GACHA_MULTI_COST = 100; // 10回ぶんの値段
+export const SKILL_GACHA_MULTI_N = 11;     // 実際に引ける回数（1回おまけ）
 
 /** id からスキル定義を引く */
 export function findSkill(id) {
@@ -228,17 +230,18 @@ export function rollSkillGacha(rand = Math.random) {
 }
 
 /**
- * 10連を引く（id配列を返す）。10連は最低1つ R 以上を保証する。
+ * まとめ引き（11連）を引く（id配列を返す）。最低1つ R 以上を保証する。
  */
-export function rollSkillGacha10(rand = Math.random) {
-  const ids = Array.from({ length: 10 }, () => rollSkillGacha(rand));
+export function rollSkillGachaMulti(rand = Math.random) {
+  const n = SKILL_GACHA_MULTI_N;
+  const ids = Array.from({ length: n }, () => rollSkillGacha(rand));
   const hasRPlus = ids.some((id) => {
     const r = findSkill(id)?.rarity;
     return r === "r" || r === "sr" || r === "ssr";
   });
   if (!hasRPlus) {
     const rPool = skillsOfRarity("r");
-    ids[9] = (rPool[Math.floor(rand() * rPool.length)] || BATTLE_SKILLS[0]).id;
+    ids[n - 1] = (rPool[Math.floor(rand() * rPool.length)] || BATTLE_SKILLS[0]).id;
   }
   return ids;
 }

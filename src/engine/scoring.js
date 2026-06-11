@@ -116,7 +116,7 @@ export function timeAttackCoins({ correct = 0, stars = 0 }) {
 }
 
 // タイムアタックでクリスタルがもらえる最低正答率（連打・あてずっぽう除けの基準）。
-export const TA_CRYSTAL_MIN_ACCURACY = 0.5;
+export const TA_CRYSTAL_MIN_ACCURACY = 0.6;
 /** タイムアタック1回でもらえるクリスタル数（0 or 1）。
  *  条件：星を1つ以上 かつ 正答率が TA_CRYSTAL_MIN_ACCURACY 以上
  *  （適当な連打＝正答率が明らかに低い回はもらえない）。 */

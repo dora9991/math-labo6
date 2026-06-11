@@ -14,7 +14,7 @@ const itemName = (id) => findItem(id)?.name ?? "";
 const GRADE_LABEL = { 1: "中1", 2: "中2", 3: "中3" };
 const GRADE_COLOR = { 1: "#818cf8", 2: "#f43f5e", 3: "#fbbf24" }; // 中1=藍 中2=赤 中3=黄
 
-export default function Home({ player, records, mistakeCount, grade = 1, onSetGrade, onTimeAttack, onChallenge, onBattle, onRelearn, onClinic, onStartGolden, onShop, onSkill, onDetail, onHowTo, onCharacter }) {
+export default function Home({ player, records, mistakeCount, grade = 1, onSetGrade, onTimeAttack, onChallenge, onBattle, onRelearn, onClinic, onStartGolden, onShop, onSkill, onCollection, onDetail, onHowTo, onCharacter }) {
   const availGrades = gradesWithChapters();
   const [msg] = useState(() => voice("open"));
   const greeting = player.name ? `${player.name}、${msg}` : msg;
@@ -129,6 +129,12 @@ export default function Home({ player, records, mistakeCount, grade = 1, onSetGr
             <span style={{ fontSize: 11, opacity: 0.8, lineHeight: 1.5 }}>バトルで使うスキルを<br />セットしよう</span>
           </button>
         </div>
+
+        {onCollection && (
+          <button className="nb-btn" onClick={onCollection} style={{ marginBottom: 10, background: "linear-gradient(135deg,#0ea5e9,#22d3ee)", color: "#fff" }}>
+            📖 モンスター図鑑（倒したモンスターを集めよう）
+          </button>
+        )}
 
         {onClinic && (
           <button className="nb-btn" onClick={onClinic} style={{ marginBottom: 10, background: "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff" }}>
