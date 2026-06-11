@@ -25,7 +25,6 @@ export const HERO_AVATARS = [
   { id: "hero07", name: "やみの騎士" },
   { id: "hero11", name: "じゅうじんの戦士" },
   { id: "hero12", name: "ベテラン冒険者" },
-  { id: "hero01", name: "ぼうけんの少女" },
   { id: "hero02", name: "ほのおの魔法少女" },
   { id: "hero03", name: "みずの巫女" },
   { id: "hero04", name: "こおりの魔導士" },

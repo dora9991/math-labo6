@@ -1,15 +1,14 @@
 // ============================================================
 // Character.jsx — 自分のキャラを設定する画面
-//  ・テンプレートから選ぶ
-//  ・手書きで描く（書いた絵をキャラにできる）
+//  ・キャラクター（立ち絵）から選ぶ
+//  ・手書きで描く（書いた絵をキャラにできる／消しゴムつき）
 //  ・画像を読み込む（お気に入りのイラストを縮小して取り込む）
 //  ・名前もつけられる
 // ============================================================
 import { useRef, useEffect, useState } from "react";
 import Header from "../components/Header.jsx";
 import Avatar from "../components/Avatar.jsx";
-import { AVATAR_TEMPLATES } from "../data/avatars.js";
-import { HERO_AVATARS } from "../data/heroes.js";
+import { HERO_AVATARS, HERO_PRICE, STARTER_HERO_ID } from "../data/heroes.js";
 import HeroImg from "../components/HeroImg.jsx";
 
 const OUT_SIZE = 240; // 保存する画像の一辺（px）。小さくしてlocalStorageを軽く保つ
@@ -33,10 +32,13 @@ function squashImage(src, cb) {
 
 const PEN_COLORS = ["#1e1b4b", "#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#000000"];
 
-export default function Character({ player, onSetAvatar, onSetName, onBack }) {
-  const [tab, setTab] = useState("hero"); // hero | template | draw | upload
+export default function Character({ player, onSetAvatar, onSetName, onBuyHero, onBack }) {
+  const coins = player.coins ?? 0;
+  const ownedHeroes = player.ownedHeroes || [STARTER_HERO_ID];
+  const [tab, setTab] = useState("hero"); // hero | draw | upload
   const [nameInput, setNameInput] = useState(player.name || "");
   const [color, setColor] = useState(PEN_COLORS[0]);
+  const [erasing, setErasing] = useState(false); // 消しゴムモード（白で上書き）
   const [preview, setPreview] = useState(null); // 取り込み中のプレビュー（dataURL）
 
   // ── 手書きキャンバス ──
@@ -46,6 +48,8 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
   const last = useRef({ x: 0, y: 0 });
   const colorRef = useRef(color);
   useEffect(() => { colorRef.current = color; }, [color]);
+  const erasingRef = useRef(erasing);
+  useEffect(() => { erasingRef.current = erasing; }, [erasing]);
 
   // 手書きタブを開いたらキャンバスを初期化（白背景）
   useEffect(() => {
@@ -74,15 +78,18 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
     drawing.current = true;
     last.current = posOf(e);
     const ctx = ctxRef.current;
-    ctx.fillStyle = colorRef.current;
-    ctx.beginPath(); ctx.arc(last.current.x, last.current.y, 2.5, 0, Math.PI * 2); ctx.fill();
+    const er = erasingRef.current;
+    ctx.fillStyle = er ? "#fff" : colorRef.current;
+    ctx.beginPath(); ctx.arc(last.current.x, last.current.y, er ? 12 : 2.5, 0, Math.PI * 2); ctx.fill();
   }
   function move(e) {
     if (!drawing.current) return;
     e.preventDefault();
     const p = posOf(e);
     const ctx = ctxRef.current;
-    ctx.strokeStyle = colorRef.current;
+    const er = erasingRef.current;
+    ctx.strokeStyle = er ? "#fff" : colorRef.current;
+    ctx.lineWidth = er ? 24 : 5; // 消しゴムは太く
     ctx.beginPath(); ctx.moveTo(last.current.x, last.current.y); ctx.lineTo(p.x, p.y); ctx.stroke();
     last.current = p;
   }
@@ -149,8 +156,7 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
 
         {/* タブ */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {tabBtn("hero", "🦸 ヒーロー")}
-          {tabBtn("template", "テンプレ")}
+          {tabBtn("hero", "🦸 キャラクター")}
           {tabBtn("draw", "✏️ 手書き")}
           {tabBtn("upload", "🖼️ 画像")}
         </div>
@@ -158,41 +164,43 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
         {/* ヒーロー（立ち絵） */}
         {tab === "hero" && (
           <div className="glass" style={{ padding: "14px 16px" }}>
-            <div className="slbl">冒険者を選ぼう（ホームやバトルに登場するよ）</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div className="slbl" style={{ margin: 0 }}>冒険者を選ぼう（ホームやバトルに登場）</div>
+              <span style={{ fontSize: 11, fontWeight: 900, color: "#fbbf24" }}>💰 {coins}</span>
+            </div>
+            <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.45)", marginBottom: 10, lineHeight: 1.5 }}>
+              最初のキャラは無料。ほかは <b style={{ color: "#fbbf24" }}>💰{HERO_PRICE}</b> で購入すると使えるよ（タイムアタックでコインを稼ごう）。
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
               {HERO_AVATARS.map((h) => {
                 const selected = player.avatar?.type === "hero" && player.avatar.id === h.id;
+                const owned = ownedHeroes.includes(h.id);
+                const canBuy = coins >= HERO_PRICE;
                 return (
-                  <button key={h.id} data-sfx="none" onClick={() => onSetAvatar({ type: "hero", id: h.id })}
+                  <button key={h.id} data-sfx="none"
+                    onClick={() => { owned ? onSetAvatar({ type: "hero", id: h.id }) : onBuyHero?.(h.id); }}
                     style={{
                       cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-                      padding: 6, borderRadius: 12, fontFamily: "inherit",
+                      padding: 6, borderRadius: 12, fontFamily: "inherit", position: "relative", overflow: "hidden",
                       background: selected ? "rgba(253,224,71,.12)" : "rgba(255,255,255,.04)",
-                      border: `2px solid ${selected ? "#fde047" : "rgba(255,255,255,.1)"}`,
+                      border: `2px solid ${selected ? "#fde047" : owned ? "rgba(255,255,255,.1)" : "rgba(251,191,36,.28)"}`,
                     }}>
-                    <div style={{ height: 96, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                      <HeroImg src={h.src} alt={h.name} style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+                    <div style={{ height: 96, width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <HeroImg src={h.src} alt={h.name}
+                        style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain", filter: owned ? "none" : "grayscale(.75) brightness(.55)" }} />
                     </div>
-                    <span style={{ fontSize: 9.5, color: selected ? "#fde047" : "rgba(255,255,255,.6)", fontWeight: 800, textAlign: "center", lineHeight: 1.2 }}>{h.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* テンプレ */}
-        {tab === "template" && (
-          <div className="glass" style={{ padding: "14px 16px" }}>
-            <div className="slbl">好きなキャラを選ぼう</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, justifyItems: "center" }}>
-              {AVATAR_TEMPLATES.map((a) => {
-                const selected = player.avatar?.type === "template" && player.avatar.id === a.id;
-                return (
-                  <button key={a.id} data-sfx="none" onClick={() => onSetAvatar({ type: "template", id: a.id })}
-                    style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 0 }}>
-                    <Avatar avatar={{ type: "template", id: a.id }} size={56} ring={selected ? "#fde047" : "transparent"} />
-                    <span style={{ fontSize: 9, color: selected ? "#fde047" : "rgba(255,255,255,.5)", fontWeight: 700 }}>{a.name}</span>
+                    {/* 未所持：ロック＋価格 */}
+                    {!owned && (
+                      <div style={{
+                        position: "absolute", top: 6, right: 6, fontSize: 10, fontWeight: 900,
+                        color: canBuy ? "#3a2a00" : "#fff", borderRadius: 999, padding: "2px 7px",
+                        background: canBuy ? "linear-gradient(135deg,#f59e0b,#fbbf24)" : "rgba(0,0,0,.55)",
+                        border: canBuy ? "none" : "1px solid rgba(255,255,255,.3)",
+                      }}>💰{HERO_PRICE}</div>
+                    )}
+                    <span style={{ fontSize: 9.5, color: selected ? "#fde047" : owned ? "rgba(255,255,255,.6)" : "rgba(255,255,255,.4)", fontWeight: 800, textAlign: "center", lineHeight: 1.2 }}>
+                      {owned ? (selected ? "✓ " : "") + h.name : "🔒 " + h.name}
+                    </span>
                   </button>
                 );
               })}
@@ -204,11 +212,15 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
         {tab === "draw" && (
           <div className="glass" style={{ padding: "14px 16px" }}>
             <div className="slbl">自分のキャラを描こう</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
               {PEN_COLORS.map((c) => (
-                <button key={c} data-sfx="none" onClick={() => setColor(c)}
-                  style={{ width: 26, height: 26, borderRadius: "50%", background: c, cursor: "pointer", border: color === c ? "3px solid #fff" : "2px solid rgba(255,255,255,.25)" }} />
+                <button key={c} data-sfx="none" onClick={() => { setColor(c); setErasing(false); }}
+                  style={{ width: 26, height: 26, borderRadius: "50%", background: c, cursor: "pointer", border: !erasing && color === c ? "3px solid #fff" : "2px solid rgba(255,255,255,.25)" }} />
               ))}
+              <button data-sfx="none" onClick={() => setErasing((v) => !v)}
+                style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 900, color: "#fff", background: erasing ? "#6366f1" : "rgba(255,255,255,.08)", border: erasing ? "2px solid #fff" : "2px solid rgba(255,255,255,.25)" }}>
+                🧽 消しゴム
+              </button>
             </div>
             <canvas
               ref={canvasRef}
@@ -216,9 +228,9 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
               style={{ width: "100%", height: 280, display: "block", background: "#fff", borderRadius: 12, border: "2px solid rgba(255,255,255,.15)", touchAction: "none", cursor: "crosshair" }}
             />
             <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-              <button onClick={clearCanvas} data-sfx="none"
+              <button onClick={() => { clearCanvas(); setErasing(false); }} data-sfx="none"
                 style={{ flex: 1, padding: "11px", borderRadius: 11, border: "1px solid rgba(255,255,255,.2)", background: "rgba(255,255,255,.06)", color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 13 }}>
-                消す
+                全部消す
               </button>
               <button onClick={useDrawing} data-sfx="none"
                 style={{ flex: 2, padding: "11px", borderRadius: 11, border: "none", background: "#6366f1", color: "#fff", fontWeight: 900, cursor: "pointer", fontSize: 13 }}>
