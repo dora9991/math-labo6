@@ -9,6 +9,7 @@ import MonsterSprite from "../components/MonsterSprite.jsx";
 import Avatar from "../components/Avatar.jsx";
 import HeroImg from "../components/HeroImg.jsx";
 import { heroImageFor } from "../data/heroes.js";
+import { pickHitCheer, pickHurtCheer } from "../data/cheers.js";
 import { BigWord, StarField } from "../components/Decorations.jsx";
 import MathText from "../components/MathText.jsx";
 import * as bgm from "../audio/bgm.js";
@@ -55,6 +56,9 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
   const [showRing, setShowRing] = useState(false);   // 正解の◯
   const [shakeAns, setShakeAns] = useState(false);   // 不正解の解答欄ゆれ
   const [hurt, setHurt] = useState(false);           // 被ダメ（赤＋画面ゆれ）
+  const [heroAtk, setHeroAtk] = useState(false);     // 自キャラの前のめり（正解時）
+  const [cheer, setCheer] = useState(null);          // 自キャラの応援吹き出し { text, hurt, key }
+  const cheerKey = useRef(0);                         // 吹き出し再生用キー
   const [monDmg, setMonDmg] = useState(null);        // モンスターのダメージ数字
   const [dmgKey, setDmgKey] = useState(0);
   const [deadParticles, setDeadParticles] = useState([]);
@@ -357,7 +361,10 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
       setGuardBuffBoth(left > 0 ? { ...gb, turns: left } : null);
     }
     setShakeAns(true); setTimeout(() => setShakeAns(false), 460);
-    if (dmg > 0) { setHurt(true); setTimeout(() => setHurt(false), 520); }
+    if (dmg > 0) {
+      setHurt(true); setTimeout(() => setHurt(false), 520);
+      setCheer({ text: pickHurtCheer(), hurt: true, key: ++cheerKey.current }); // 自キャラが「いてっ！」
+    }
     setMonState("attack"); setAnimKey((k) => k + 1);
     if (fx) showEnemyFx(fx);
     setLog(`${label} -${dmg}` + (invinc ? "（🌟無敵！）" : guarded ? "（🛡️ガード！）" : ""));
@@ -462,6 +469,8 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
       if (doubleNextRef.current) { dmg *= 2; doubled = true; doubleNextRef.current = false; }
       refreshBuffTags();
       setShowRing(true); setTimeout(() => setShowRing(false), 700);
+      setHeroAtk(true); setTimeout(() => setHeroAtk(false), 340); // 自キャラ前のめり
+      setCheer({ text: pickHitCheer({ streak: newCombo }), hurt: false, key: ++cheerKey.current });
       setMonState("damage"); setAnimKey((k) => k + 1);
       setMonDmg(`-${dmg}`); setDmgKey((k) => k + 1);
       setLog(
@@ -564,41 +573,48 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
           </div>
         </div>
 
-        {/* モンスター舞台 */}
+        {/* モンスター舞台（自キャラ左・敵モンスター右で向かい合う） */}
         <div className="bt-stage">
-          {charging && <div className="bt-charge-aura" />}
-          {monDmg && <div key={dmgKey} className="mon-dmg-num show">{monDmg}</div>}
-          {enemyFx && (
-            <div className="bt-enemy-fx" style={{ "--ec": enemyFx.color }}>
-              <span className="ic">{enemyFx.icon}</span>
-              <span className="nm">{enemyFx.label}</span>
-            </div>
+          {/* 応援の吹き出し（自キャラの頭上） */}
+          {cheer && (
+            <div key={cheer.key} className={"bt-cheer" + (cheer.hurt ? " hurt" : "")}>{cheer.text}</div>
           )}
-          {showRing && <><div className="correct-ring show" /><div className="correct-flash show" /></>}
-          {/* 自分のキャラ（立ち絵）：左下に登場。被ダメで揺れる */}
+          {/* 自分のキャラ（立ち絵）：左下。正解で前のめり／被ダメでのけぞり＋赤フラッシュ */}
           {heroImageFor(player.avatar) && (
             <HeroImg
               src={heroImageFor(player.avatar)} alt="あなた"
-              className={"hero-cutout" + (hurt ? " bt-screen-shake" : "")}
+              className={"bt-hero" + (heroAtk ? " attack" : "") + (hurt ? " hit" : "")}
               style={{
                 position: "absolute", left: 0, bottom: -8, height: 150, width: "auto",
                 maxWidth: "44%", objectFit: "contain", zIndex: 3, pointerEvents: "none",
               }}
             />
           )}
-          <MonsterSprite monster={monster} state={monState} animKey={animKey} />
-          {deadParticles.length > 0 && (
-            <div className="bt-particles">
-              {deadParticles.map((p) => (
-                <div key={p.i} className="bt-dp burst" style={{
-                  width: p.size, height: p.size, background: p.color,
-                  borderRadius: p.round ? "50%" : "2px",
-                  "--tx": p.tx + "px", "--ty": p.ty + "px", "--r": p.rot + "deg",
-                  animationDelay: p.i * 0.03 + "s",
-                }} />
-              ))}
-            </div>
-          )}
+          {/* 敵モンスター＋戦闘演出（右側にまとめて配置） */}
+          <div className="bt-mon">
+            {charging && <div className="bt-charge-aura" />}
+            {monDmg && <div key={dmgKey} className="mon-dmg-num show">{monDmg}</div>}
+            {enemyFx && (
+              <div className="bt-enemy-fx" style={{ "--ec": enemyFx.color }}>
+                <span className="ic">{enemyFx.icon}</span>
+                <span className="nm">{enemyFx.label}</span>
+              </div>
+            )}
+            {showRing && <><div className="correct-ring show" /><div className="correct-flash show" /></>}
+            <MonsterSprite monster={monster} state={monState} animKey={animKey} />
+            {deadParticles.length > 0 && (
+              <div className="bt-particles">
+                {deadParticles.map((p) => (
+                  <div key={p.i} className="bt-dp burst" style={{
+                    width: p.size, height: p.size, background: p.color,
+                    borderRadius: p.round ? "50%" : "2px",
+                    "--tx": p.tx + "px", "--ty": p.ty + "px", "--r": p.rot + "deg",
+                    animationDelay: p.i * 0.03 + "s",
+                  }} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* プレイヤー（自分のHP）：ステージ直下に配置 */}

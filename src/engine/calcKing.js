@@ -7,6 +7,7 @@
 // ============================================================
 import { genProblem, isHardProblem } from "./generator.js";
 import { pick } from "./rng.js";
+import { calcKingPoolFor } from "../data/calcKingProblems.js";
 
 /**
  * 「途中計算や文章の読み取りで“式を書く”作業が要る」問題か。
@@ -49,6 +50,14 @@ export function nextCalcProblem(unit, recent = []) {
  */
 export function nextChapterCalcProblem(chapter, recent = []) {
   if (!chapter) return null;
+  // ⓪ 教科書の章末・発展の「文章問題プール」があれば最優先で出す（手書き計算が要る厳選問題）
+  const pool = calcKingPoolFor(chapter.id);
+  if (pool.length) {
+    const usable = pool.filter((p) => !recent.includes(p.id));
+    const from = usable.length ? usable : pool;
+    const p = pick(from);
+    if (p) return { ...p, unitName: chapter.name, subName: "文章・発展" };
+  }
   const units = chapter.units || (chapter.problems ? [chapter] : []);
   if (!units.length) return null;
   // ① 小単元をランダムに選びながら「作業の要る発展問題」を最優先で探す

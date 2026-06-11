@@ -397,7 +397,7 @@
    ============================================================ */
 .ta-stage {
   position: relative;
-  height: 188px;
+  height: 214px;
   margin: 4px 0 10px;
   border-radius: 18px;
   overflow: hidden;
@@ -405,7 +405,6 @@
     radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,.18), transparent 60%),
     linear-gradient(180deg, rgba(15,23,42,.55), rgba(15,23,42,.78));
   border: 1px solid rgba(148,163,184,.18);
-  display: flex; align-items: flex-end; justify-content: center;
 }
 .ta-stage.fever {
   background:
@@ -429,40 +428,55 @@
   background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.12);
 }
 .ta-hp-fill { height: 100%; border-radius: 999px; transition: width .18s ease; }
-/* 自分のキャラ（左下）＋攻撃の前のめり */
+/* 自分のキャラ（左下）＋攻撃の前のめり。白フチは付けず足元の影だけ。 */
 .ta-hero {
-  position: absolute; left: 6px; bottom: -6px; height: 118px; width: auto;
-  max-width: 42%; object-fit: contain; z-index: 3; pointer-events: none;
+  position: absolute; left: 8px; bottom: -6px; height: 140px; width: auto;
+  max-width: 40%; object-fit: contain; z-index: 3; pointer-events: none;
   transform-origin: center bottom;
-}
-/* 立ち絵を「白フチ付きステッカー」風にする（背景は HeroImage 側で透明化済み）。
-   多方向の drop-shadow でシルエットに白い縁取り＋足元にやわらかい影。 */
-.hero-cutout {
-  filter:
-    drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
-    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
-    drop-shadow(1px 1px 0 #fff) drop-shadow(-1px 1px 0 #fff)
-    drop-shadow(1px -1px 0 #fff) drop-shadow(-1px -1px 0 #fff)
-    drop-shadow(0 5px 6px rgba(0,0,0,.45));
+  filter: drop-shadow(0 6px 7px rgba(0,0,0,.5));
 }
 .ta-hero.attack { animation: taHeroAtk .34s ease; }
 @keyframes taHeroAtk {
   0% { transform: translateX(0) scale(1); }
-  40% { transform: translateX(14px) scale(1.06); }
+  40% { transform: translateX(16px) scale(1.06) rotate(2deg); }
   100% { transform: translateX(0) scale(1); }
 }
-/* 応援の吹き出し（キャラの上にポンと出る） */
-.ta-cheer {
-  position: absolute; left: 8px; bottom: 116px; z-index: 6; pointer-events: none;
-  max-width: 60%; padding: 6px 11px; border-radius: 14px 14px 14px 4px;
-  background: #fff; color: #1e293b; font-size: 13px; font-weight: 900;
-  box-shadow: 0 4px 12px rgba(0,0,0,.35); animation: taCheerPop .5s ease;
+/* 被ダメ：のけぞり＋赤フラッシュ（自キャラにもダメージ感を出す） */
+.ta-hero.hit, .bt-hero.hit { animation: heroHit .5s ease; }
+@keyframes heroHit {
+  0% { transform: translateX(0); filter: drop-shadow(0 6px 7px rgba(0,0,0,.5)); }
+  15% { transform: translateX(-12px) rotate(-5deg); filter: drop-shadow(0 6px 7px rgba(0,0,0,.5)) brightness(.4) sepia(1) hue-rotate(-30deg) saturate(6); }
+  40% { transform: translateX(-6px) rotate(-2deg); filter: drop-shadow(0 6px 7px rgba(0,0,0,.5)) brightness(1) sepia(.6) hue-rotate(-30deg) saturate(4); }
+  100% { transform: translateX(0); filter: drop-shadow(0 6px 7px rgba(0,0,0,.5)); }
 }
-.ta-cheer.fever { background: linear-gradient(135deg,#fde047,#fbbf24); color: #4a2c00; }
+
+/* 敵モンスターを右側に配置＝向かい合う構図 */
+.ta-mon {
+  position: absolute; right: 5%; bottom: 12px; z-index: 2;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+
+/* 応援の吹き出し：キャラの頭の上に出し、尻尾を下（キャラの口元）へ向ける＝喋ってる感 */
+.ta-cheer, .bt-cheer {
+  position: absolute; z-index: 6; pointer-events: none;
+  max-width: 56%; padding: 7px 13px; border-radius: 15px;
+  background: #fff; color: #1e293b; font-size: 14px; font-weight: 900;
+  white-space: nowrap; box-shadow: 0 5px 14px rgba(0,0,0,.4);
+  transform: translateX(-50%); animation: taCheerPop .42s ease;
+}
+.ta-cheer { left: 82px; bottom: 134px; }
+.ta-cheer::after, .bt-cheer::after {
+  content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -7px;
+  border: 8px solid transparent; border-top: 9px solid #fff; border-bottom: 0;
+}
+.ta-cheer.fever, .bt-cheer.fever { background: linear-gradient(135deg,#fde047,#fbbf24); color: #4a2c00; }
+.ta-cheer.fever::after, .bt-cheer.fever::after { border-top-color: #fbbf24; }
+.ta-cheer.hurt, .bt-cheer.hurt { background: #fecaca; color: #7f1d1d; }
+.ta-cheer.hurt::after, .bt-cheer.hurt::after { border-top-color: #fecaca; }
 @keyframes taCheerPop {
-  0% { transform: translateY(8px) scale(.6); opacity: 0; }
-  45% { transform: translateY(0) scale(1.08); opacity: 1; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
+  0% { transform: translateX(-50%) translateY(8px) scale(.6); opacity: 0; }
+  45% { transform: translateX(-50%) translateY(0) scale(1.08); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
 }
 /* 撃破の「○体！」ポップ */
 .ta-kill-pop {
@@ -492,3 +506,17 @@
   display: flex; align-items: center; justify-content: center;
 }
 .ta-kill-chip img { width: 36px; height: 36px; object-fit: contain; }
+
+/* ============================================================
+   バトルモードの自キャラ演出（タイムアタックと同じ感じ）
+   ============================================================ */
+/* 自キャラ：正解で前のめり、被ダメでのけぞり（heroHit を流用）。白フチ無し。 */
+.bt-hero { transform-origin: center bottom; filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+.bt-hero.attack { animation: taHeroAtk .34s ease; }
+/* 敵モンスターを右寄りに配置＝向かい合う構図。中の演出(◯/ダメージ/粒子)も追従。 */
+.bt-mon {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 62%;
+  display: flex; align-items: center; justify-content: center;
+}
+/* バトルの応援吹き出し（自キャラの頭上） */
+.bt-cheer { left: 82px; bottom: 150px; }

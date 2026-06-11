@@ -99,7 +99,8 @@ export function initialPlayerState(studentId) {
     ownedSkills: ["time2x", "ultimate"], // 所持バトルスキルid（初期は基本2種。スキルガチャで追加）
     equip: { 1: "time2x", 2: "ultimate" }, // スロット1/2に装備中のスキルid
     seenMonsters: {},  // { "m_c1_u1": true, ... } 解放を既に見たモンスター（「新しい敵」通知の制御）
-    avatar: null,      // 自分のキャラ { type:"template", id } または { type:"image", src:dataURL }。null=既定（🐧）
+    avatar: { type: "hero", id: "hero10" }, // 初期キャラ＝シンプルな男の子（heroes.js STARTER_HERO_ID）
+    ownedHeroes: ["hero10"], // 購入で解放したヒーローid。初期は STARTER のみ（他は💰500で購入）
     name: "",          // プレイヤー名（任意）
     unitMastery: {},   // { unitId: { pt:0〜100, streak:連続正解数, ok:bool } } 小単元の習得確認（4連続正解でOK）
     updatedAt: now(),

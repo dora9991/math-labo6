@@ -33,14 +33,16 @@ const STATE_CLASS = {
   dead: "dead-anim",
 };
 
-export default function MonsterSprite({ monster, state = "idle", animKey = 0, mini = false, silhouette = false }) {
+export default function MonsterSprite({ monster, state = "idle", animKey = 0, mini = false, silhouette = false, size: sizeOverride }) {
   // ※フックは早期returnより前に呼ぶ（呼び出し順を一定に保つ）
-  const rawUrl = monster ? monsterImageUrl(monster, mini ? "small" : "full") : null;
+  //  画像の解像度は size 指定でも full を使う（mini=small画像は小さく荒いため）
+  const useSmall = mini && !sizeOverride;
+  const rawUrl = monster ? monsterImageUrl(monster, useSmall ? "small" : "full") : null;
   const url = useTransparent(rawUrl);
   if (!monster) return null;
   const bodyClass = STATE_CLASS[state] || "idle-anim";
   const flash = state === "damage" || state === "dead" ? " flash-anim" : "";
-  const size = mini ? 64 : 200; // バトルは大きめに表示
+  const size = sizeOverride || (mini ? 64 : 200); // バトルは大きめに表示
 
   // 画像があれば画像で描画（色違い hue ＋ 状態アニメ）
   if (rawUrl) {
@@ -70,10 +72,10 @@ export default function MonsterSprite({ monster, state = "idle", animKey = 0, mi
       {monster.idleExtra ? <style>{monster.idleExtra}</style> : null}
       <svg
         key={animKey}
-        className={(mini ? "" : "mon-svg") + flash}
+        className={((mini || sizeOverride) ? "" : "mon-svg") + flash}
         viewBox="0 0 140 140"
         xmlns="http://www.w3.org/2000/svg"
-        style={mini ? { width: size, height: size, overflow: "visible" } : undefined}
+        style={(mini || sizeOverride) ? { width: size, height: size, overflow: "visible" } : undefined}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </>

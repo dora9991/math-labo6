@@ -137,10 +137,10 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
               <input
                 value={nameInput} maxLength={10} placeholder="なまえ（10文字まで）"
                 onChange={(e) => setNameInput(e.target.value)}
-                style={{ flex: 1, fontSize: 14, fontWeight: 800, padding: "8px 10px", borderRadius: 9, border: "1px solid rgba(255,255,255,.2)", background: "rgba(255,255,255,.06)", color: "#fff", fontFamily: "inherit" }}
+                style={{ flex: 1, minWidth: 0, width: 0, fontSize: 14, fontWeight: 800, padding: "8px 10px", borderRadius: 9, border: "1px solid rgba(255,255,255,.2)", background: "rgba(255,255,255,.06)", color: "#fff", fontFamily: "inherit" }}
               />
               <button onClick={() => onSetName(nameInput)} data-sfx="none"
-                style={{ fontSize: 12, fontWeight: 900, padding: "8px 14px", borderRadius: 9, border: "none", background: "#6366f1", color: "#fff", cursor: "pointer" }}>
+                style={{ flexShrink: 0, fontSize: 12, fontWeight: 900, padding: "8px 14px", borderRadius: 9, border: "none", background: "#6366f1", color: "#fff", cursor: "pointer" }}>
                 決定
               </button>
             </div>

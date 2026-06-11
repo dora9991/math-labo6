@@ -18,6 +18,7 @@ import HeroImg from "../components/HeroImg.jsx";
 import { heroImageFor } from "../data/heroes.js";
 import { MONSTERS } from "../data/monsters.js";
 import { monsterImageUrl } from "../data/monsterImages.js";
+import { pickHitCheer, pickMissCheer, pickKillCheer } from "../data/cheers.js";
 import * as bgm from "../audio/bgm.js";
 import * as sfx from "../audio/sfx.js";
 import { genProblem, makeChoices, isHardProblem } from "../engine/generator.js";
@@ -66,16 +67,7 @@ function buildGauntlet(chapter, weak, weakUnits) {
 // 何発で倒れるか（撃破がポンポン出るよう軽め。進むほど少しだけ硬く）
 const hitsToKill = (k) => Math.min(4, 2 + Math.floor(k / 4));
 
-// 応援メッセージ（正解時）。連続・フィーバー・ラストで特別なものを混ぜる。
-const CHEER = ["いいぞ！", "ナイス！", "その調子！", "あたり！", "すごい！", "つよい！", "やるね！"];
-const CHEER_STREAK = ["コンボ継続！", "とまらない！", "燃えてきた！", "ノリノリ！"];
-const CHEER_MISS = ["ドンマイ！", "次いこう！", "切りかえ！", "おしい！"];
-const pickCheer = (streak, fever, timeLeft) => {
-  if (fever) return "フィーバー中！畳みかけろ！";
-  if (timeLeft <= 5) return "ラスト！もう一撃！";
-  if (streak >= 5) return CHEER_STREAK[Math.floor(Math.random() * CHEER_STREAK.length)];
-  return CHEER[Math.floor(Math.random() * CHEER.length)];
-};
+// 応援メッセージは data/cheers.js に集約（バトルと共通・バリエーション多め）。
 
 export default function TimeAttack({ player, chapter, unit, level, onComplete, onBackToMap, onHome, weak = false, weakUnits = [], onWeakStart }) {
   const quizTime = taTimeFor(chapter, unit);
@@ -200,6 +192,7 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
     setKills(k);
     if (cur) setKilled((p) => (p.length < 30 ? [...p, cur] : p));
     setKillPop({ text: `${k}体撃破！`, key: k });
+    setCheer({ text: pickKillCheer(), fever: false, key: "kill" + k }); // 撃破時のセリフ
     setTimeout(() => setKillPop((kp) => (kp && kp.key === k ? null : kp)), 800);
     // 次の敵を出す
     const pool = gauntletRef.current;
@@ -226,7 +219,7 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
       setHeroAtk(true); setTimeout(() => setHeroAtk(false), 340);   // キャラ前のめり
       const fever = timeLeft <= FEVER_SEC;
       const hits = fever ? 2 : 1;
-      setCheer({ text: pickCheer(ns, fever, timeLeft), fever, key: correct + 1 });
+      setCheer({ text: pickHitCheer({ streak: ns, fever, timeLeft }), fever, key: correct + 1 });
       const newHp = monHpRef.current - hits;
       if (newHp <= 0) {
         killCurrentMonster();
@@ -241,7 +234,7 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
       setWrong((w) => w + 1);
       sfx.wrong();
       setShakeAns(true); setTimeout(() => setShakeAns(false), 460); // 横揺れ
-      setCheer({ text: CHEER_MISS[Math.floor(Math.random() * CHEER_MISS.length)], fever: false, key: -(wrong + 1) });
+      setCheer({ text: pickMissCheer(), fever: false, key: -(wrong + 1) });
     }
     setTimeout(() => {
       setLocked(false); setSelected(null);
@@ -425,17 +418,17 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
               </div>
             </div>
           )}
-          {/* 応援の吹き出し */}
+          {/* 応援の吹き出し（キャラの頭上） */}
           {cheer && (
             <div key={cheer.key} className={"ta-cheer" + (cheer.fever ? " fever" : "")}>{cheer.text}</div>
           )}
-          {/* 自分のキャラ（白背景を透明化＋白フチ） */}
-          <HeroImg src={heroImageFor(player.avatar)} alt="あなた" className={"ta-hero hero-cutout" + (heroAtk ? " attack" : "")} />
-          {/* モンスター */}
-          <div style={{ position: "relative", marginBottom: 6 }}>
+          {/* 自分のキャラ（白背景透明・白フチ無し）。左下に立って右の敵と向かい合う */}
+          <HeroImg src={heroImageFor(player.avatar)} alt="あなた" className={"ta-hero" + (heroAtk ? " attack" : "")} />
+          {/* モンスター（右側に大きく配置） */}
+          <div className="ta-mon">
             {showRing && <div className="correct-ring show" />}
             {monDmg && <div key={dmgKey} className="mon-dmg-num show" style={{ color: fever ? "#fde047" : "#fff" }}>{monDmg}</div>}
-            <MonsterSprite monster={mon} state={monState} animKey={animKey} mini />
+            <MonsterSprite monster={mon} state={monState} animKey={animKey} size={150} />
             {deadParticles.length > 0 && (
               <div className="bt-particles">
                 {deadParticles.map((p) => (
