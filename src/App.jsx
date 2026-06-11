@@ -670,14 +670,17 @@ export default function App() {
     loginCheckedRef.current = true;
     const today = todayStr();
     if (!canClaimLogin(data.player, today)) return;
-    const { streak, reward, isFifth } = computeLogin(data.player, today);
+    const { streak, reward, crystal, isFifth } = computeLogin(data.player, today);
     updatePlayer((p) => ({
       ...p,
       coins: (p.coins || 0) + reward,
+      crystals: (p.crystals || 0) + crystal, // 5日連続ごとにクリスタル+10
       loginStreak: streak,
       lastLoginDate: today,
     }));
-    setLoginBonus({ reward, streak, isFifth });
+    // 演出はホーム画面が落ち着いてから少し間を置いて出す（いきなり出ると慌ただしいため）
+    const t = setTimeout(() => setLoginBonus({ reward, streak, crystal, isFifth }), 1000);
+    return () => clearTimeout(t);
   }, [screen]); // eslint-disable-line
 
   // 画面の振り分け
@@ -1032,6 +1035,7 @@ export default function App() {
         <LoginBonusOverlay
           reward={loginBonus.reward}
           streak={loginBonus.streak}
+          crystal={loginBonus.crystal}
           isFifth={loginBonus.isFifth}
           onDone={() => setLoginBonus(null)}
         />

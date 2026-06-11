@@ -12,6 +12,7 @@
 
 export const BONUS_BASE = 100;     // 通常日のログインボーナス(G)
 export const BONUS_STREAK = 500;   // 5日連続ごとのボーナス(G)＝ガチャ1回
+export const BONUS_STREAK_CRYSTAL = 10; // 5日連続ごとに追加でもらえるクリスタル💎
 export const STREAK_TARGET = 5;    // 何日連続ごとに大ボーナスか
 export const GOLDEN_MS = 15 * 60 * 1000; // ゴールデンタイムの長さ（15分）
 export const GOLDEN_MULT = 1.2;    // ゴールデンタイム中のXP倍率
@@ -37,7 +38,12 @@ export function computeLogin(player = {}, today) {
   else if (diff === 1) streak = (player.loginStreak || 0) + 1; // 連続
   else streak = 1;                                          // 途切れ→リセット
   const isFifth = streak % STREAK_TARGET === 0;
-  return { streak, reward: isFifth ? BONUS_STREAK : BONUS_BASE, isFifth };
+  return {
+    streak,
+    reward: isFifth ? BONUS_STREAK : BONUS_BASE,
+    crystal: isFifth ? BONUS_STREAK_CRYSTAL : 0, // 5日連続ごとにクリスタル+10
+    isFifth,
+  };
 }
 
 /** 今日まだログインボーナスを受け取っていないか */

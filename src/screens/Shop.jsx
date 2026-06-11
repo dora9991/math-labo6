@@ -46,8 +46,8 @@ export default function Shop({ player, onBuy, onDiscard, onHeal, onPullGacha, on
     <div className="app">
       <Header player={player} back="ホーム" onBack={onBack} />
       <div className="content">
-        <div className="pg-ttl">🛒 ショップ</div>
-        <div className="pg-sub">タイムアタックで稼いだコインで、アイテムやスキルを手に入れよう</div>
+        <div className="pg-ttl">🎒 アイテム</div>
+        <div className="pg-sub">タイムアタックで稼いだコインで、どうぐ・そうび・回復を手に入れよう</div>
 
         {/* コイン残高 */}
         <div className="glass" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px" }}>

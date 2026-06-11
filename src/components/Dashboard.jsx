@@ -145,7 +145,7 @@ export default function Dashboard({ player, records = [], onDetail, grade = 1 })
               <div style={{
                 width: 96, flexShrink: 0, borderRadius: 12, overflow: "hidden",
                 background: "linear-gradient(160deg,rgba(14,165,233,.18),rgba(30,58,138,.28))",
-                border: "1px solid rgba(103,232,249,.25)", display: "flex", alignItems: "flex-end", justifyContent: "center",
+                border: "1px solid rgba(103,232,249,.25)", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <HeroImg src={heroImageFor(player.avatar)} alt="マイキャラ"
                   style={{ width: "100%", height: "auto", objectFit: "contain", display: "block" }} />

@@ -13,13 +13,13 @@ const TIPS = [
   "🧮 計算王で章をクリアすると、そのワールドのバトル攻撃力がずっと上がるよ！",
   "学年（中1・中2・中3）はホームで切りかえ。学年ごとにレベルが分かれているよ！",
   "⏱️ タイムアタックで3つの難易度すべて★をとると、バトルに新しい敵が出るよ！",
-  "🛒 ショップのガチャで武器・防具を集めると、バトルが有利になるよ！",
+  "🎒 「アイテム」のガチャで武器・防具を集めると、バトルが有利になるよ！",
   // "つまずいた所は「🩺 こまり感クリニック」で、診断して練習できるよ！", // クリニック非表示につきヒントも一旦オフ
   "解説動画（葉一さんの19ch）は、単元えらびや学び直しの📺ボタンから見られるよ！",
   "ゴールデンタイムは、準備ができてからホームのボタンで始められるよ（15分XP1.2倍）！",
 ];
 
-export default function LoginBonusOverlay({ reward, streak, isFifth, onDone }) {
+export default function LoginBonusOverlay({ reward, streak, crystal = 0, isFifth, onDone }) {
   useEffect(() => { try { sfx.levelUp(); } catch {} }, []);
 
   // 次の大ボーナスまであと何日か
@@ -35,9 +35,16 @@ export default function LoginBonusOverlay({ reward, streak, isFifth, onDone }) {
         <div style={{ fontSize: 13, color: "#fde047", fontWeight: 800 }}>🔥 {streak}日連続ログイン！</div>
         <div style={{ fontSize: 34, fontWeight: 900, color: "#fbbf24", margin: "6px 0" }}>+{reward} <span style={{ fontSize: 16 }}>コイン</span></div>
         {isFifth ? (
-          <div style={{ fontSize: 12.5, color: "#86efac", fontWeight: 700, lineHeight: 1.6 }}>
-            5日連続ボーナス！🎉<br />ガチャを1回引けるよ。
-          </div>
+          <>
+            {crystal > 0 && (
+              <div style={{ fontSize: 26, fontWeight: 900, color: "#67e8f9", margin: "0 0 4px" }}>
+                ＋{crystal} <span style={{ fontSize: 14 }}>クリスタル💎</span>
+              </div>
+            )}
+            <div style={{ fontSize: 12.5, color: "#86efac", fontWeight: 700, lineHeight: 1.6 }}>
+              5日連続ボーナス！🎉<br />ガチャ1回ぶん＆スキルガチャも引けるよ。
+            </div>
+          </>
         ) : (
           <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", lineHeight: 1.6 }}>
             あと <b style={{ color: "#fde047" }}>{toNext}日</b> 連続で <b style={{ color: "#fbbf24" }}>+500コイン</b>（ガチャ1回）！
@@ -55,5 +62,5 @@ export default function LoginBonusOverlay({ reward, streak, isFifth, onDone }) {
 }
 
 const bg = { position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 80, cursor: "pointer" };
-const card = { background: "linear-gradient(160deg,#1e1b4b,#312e81)", border: "1px solid rgba(255,255,255,.15)", borderRadius: 18, padding: "22px 26px", textAlign: "center", maxWidth: 320, boxShadow: "0 18px 50px rgba(0,0,0,.5)" };
+const card = { background: "linear-gradient(160deg,#1e1b4b,#312e81)", border: "1px solid rgba(255,255,255,.15)", borderRadius: 18, padding: "22px 26px", textAlign: "center", maxWidth: 320, boxShadow: "0 18px 50px rgba(0,0,0,.5)", animation: "rankUpPop .45s cubic-bezier(.2,1.4,.4,1) both" };
 const btn = { marginTop: 16, padding: "11px 28px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 900, color: "#3a2a00", background: "linear-gradient(135deg,#f59e0b,#fbbf24)" };

@@ -116,10 +116,10 @@ export default function Home({ player, records, mistakeCount, grade = 1, onSetGr
 
           {/* 3段目 */}
           <button className="mode-card msh" onClick={onShop}>
-            <span style={{ fontSize: 36 }}>🛒</span>
-            <span style={{ fontSize: 15, fontWeight: 900 }}>ショップ</span>
+            <span style={{ fontSize: 36 }}>🎒</span>
+            <span style={{ fontSize: 15, fontWeight: 900 }}>アイテム</span>
             <span style={{ fontSize: 11, opacity: 0.8, lineHeight: 1.5 }}>
-              アイテム・スキルを買おう<br />💰{player.coins ?? 0}
+              どうぐ・そうび・回復を買おう<br />💰{player.coins ?? 0}
               {player.item && <> ／ 🎒{itemName(player.item)}</>}
             </span>
           </button>

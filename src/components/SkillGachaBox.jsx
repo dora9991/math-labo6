@@ -38,6 +38,7 @@ export default function SkillGachaBox({ player, onPull }) {
   const [stage, setStage] = useState(null);   // null | spin | flash | reveal | summary
   const [results, setResults] = useState(null);
   const [idx, setIdx] = useState(0);          // 今めくっている枚数（0始まり）
+  const [showList, setShowList] = useState(false); // レア度一覧（図鑑）の開閉。普段は閉じておく
   const timers = useRef([]);
   const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => () => clearTimers(), []);
@@ -104,8 +105,14 @@ export default function SkillGachaBox({ player, onPull }) {
         </button>
       </div>
 
-      {/* レア度ごとのコレクション一覧 */}
-      {RARITY_LABEL_ORDER.map((rk) => {
+      {/* レア度一覧（図鑑）の開閉ボタン。普段は閉じておき、押すと展開する */}
+      <button onClick={() => setShowList((v) => !v)} data-sfx="none"
+        style={{ ...btnGhost, width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+        🗂️ レア度一覧（図鑑 {collected}/{total}）{showList ? "を閉じる ▴" : "を見る ▾"}
+      </button>
+
+      {/* レア度ごとのコレクション一覧（showList のときだけ表示） */}
+      {showList && RARITY_LABEL_ORDER.map((rk) => {
         const rar = SKILL_RARITY[rk];
         const list = BATTLE_SKILLS.filter((s) => s.rarity === rk);
         return (

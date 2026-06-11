@@ -4,7 +4,7 @@
 //  未設定(null)なら既定のぺんぎんを表示する。
 // ============================================================
 import { findAvatarTemplate } from "../data/avatars.js";
-import { findHero } from "../data/heroes.js";
+import { findHero, heroImageFor } from "../data/heroes.js";
 import HeroImg from "./HeroImg.jsx";
 
 export default function Avatar({ avatar, size = 42, onClick, ring = null }) {
@@ -15,13 +15,14 @@ export default function Avatar({ avatar, size = 42, onClick, ring = null }) {
     border: ring ? `2px solid ${ring}` : "none",
   };
 
-  // ヒーロー（立ち絵）：丸アイコンでは顔が見えるよう上寄せで切り抜く
+  // ヒーロー（立ち絵）：丸アイコンでは顔が見えるよう上寄せで切り抜く。
+  //  一覧から外したidでも画像があれば表示できるよう heroImageFor(urlOf) で解決。
   if (avatar && avatar.type === "hero") {
-    const hero = findHero(avatar.id);
-    if (hero && hero.src) {
+    const src = heroImageFor(avatar);
+    if (src) {
       return (
         <div style={{ ...style, background: "linear-gradient(135deg,#1e3a8a,#0ea5e9)" }} onClick={onClick}>
-          <HeroImg src={hero.src} alt={hero.name}
+          <HeroImg src={src} alt={findHero(avatar.id)?.name || "キャラ"}
             style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%" }} />
         </div>
       );

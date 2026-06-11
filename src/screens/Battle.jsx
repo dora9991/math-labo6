@@ -725,7 +725,7 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
           <div style={{ fontSize: 13, color: "#cceebb", margin: "6px 0 14px" }}>
             {win ? `${monster.name} をたおした！ +${monster.reward}XP を獲得！` : `${monster.name} に やられてしまった…`}
           </div>
-          {!win && <div style={{ fontSize: 12, color: "#88aa88", marginBottom: 14, maxWidth: 300 }}>💡 XPを貯めてレベルを上げると、HP・攻撃力・考える時間が増えて有利になります。<br />HP1でメニューに戻ります。ショップで治療してから再挑戦しよう。</div>}
+          {!win && <div style={{ fontSize: 12, color: "#88aa88", marginBottom: 14, maxWidth: 300 }}>💡 XPを貯めてレベルを上げると、HP・攻撃力・考える時間が増えて有利になります。<br />HP1でメニューに戻ります。「アイテム」で治療してから再挑戦しよう。</div>}
           {win ? (
             <div style={{ display: "flex", gap: 10 }}>
               <button className="bt-choice" style={{ padding: "12px 18px" }} onClick={onExit}>👾 相手を選ぶ</button>
@@ -920,7 +920,7 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
                   <span className="use">つかう</span>
                 </button>
               ) : (
-                <div className="bt-item-empty">🎒 アイテムなし（ショップで買えます）</div>
+                <div className="bt-item-empty">🎒 アイテムなし（「アイテム」画面で買えます）</div>
               );
             })()}
           </div>
