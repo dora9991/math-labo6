@@ -201,28 +201,34 @@ const ROLES = {
 
 // 各モンスターの「行動パターン(ai)＋役割(role)＋技の強さ上書き」。idx順。
 // 序盤はやさしく、進むほど多彩で手強くなる。HP/攻撃は role 倍率で凸凹する。
+// 各プロフィールに敵スキル（moves）とパッシブ（thorns/enrage/exposeOnCharge）を割り当て、
+// 浅い単元はおとなしく、深い単元ほど多彩・厄介になるよう全23種を散りばめる。
+//   moves: [{ id, chance }] … 敵のターンに確率で発動（engine/battle.js の ENEMY_MOVES）
+//   thorns(0〜1) … プレイヤーの攻撃のたび反射ダメージ
+//   enrage(>1) … 敵HP半分以下で攻撃力倍率
+//   exposeOnCharge … チャージ中に被ダメージ2倍（弱点露出）
 const PROFILES = [
-  { ai: "plain",   role: "normal"  },               // 0
-  { ai: "plain",   role: "tank"    },               // 1 硬いが攻撃は弱い
-  { ai: "fire",    role: "normal"  },               // 2
-  { ai: "healer",  role: "tank"    },               // 3 回復＋硬い＝粘る
-  { ai: "mage",    role: "cannon"  },               // 4 もろいが魔法が痛い
-  { ai: "charger", role: "bruiser" },               // 5
-  { ai: "fire",    role: "cannon"  },               // 6 もろいが炎が痛い
-  { ai: "healer",  role: "tank"    },               // 7
-  { ai: "mage",    role: "normal"  },               // 8
-  { ai: "charger", role: "bruiser" },               // 9
-  { ai: "super",   role: "nuker", superMult: 6 },   // 10 必殺技が強い
-  { ai: "plain",   role: "tank"    },               // 11
-  { ai: "fire",    role: "cannon"  },               // 12
-  { ai: "healer",  role: "bruiser" },               // 13
-  { ai: "mage",    role: "cannon"  },               // 14
-  { ai: "charger", role: "bruiser" },               // 15
-  { ai: "super",   role: "nuker", superMult: 7 },   // 16 もっと強い必殺技
-  { ai: "fire",    role: "cannon"  },               // 17
-  { ai: "mage",    role: "cannon"  },               // 18
-  { ai: "charger", role: "tank"    },               // 19 硬くて、ためる
-  { ai: "super",   role: "nuker", superMult: 8 },   // 20 超強い必殺技
+  { ai: "plain",   role: "normal",  moves: [{ id: "timesteal", chance: 0.18 }] },                 // 0
+  { ai: "plain",   role: "tank",    thorns: 0.15, moves: [{ id: "barrier", chance: 0.2 }] },      // 1 硬い＋トゲ
+  { ai: "fire",    role: "normal",  moves: [{ id: "panic", chance: 0.18 }] },                     // 2
+  { ai: "healer",  role: "tank",    moves: [{ id: "eregen", chance: 0.25 }] },                    // 3 回復＋再生＝粘る
+  { ai: "mage",    role: "cannon",  moves: [{ id: "curse", chance: 0.2 }] },                      // 4
+  { ai: "charger", role: "bruiser", moves: [{ id: "crit", chance: 0.22 }] },                      // 5
+  { ai: "fire",    role: "cannon",  moves: [{ id: "pierce", chance: 0.2 }] },                     // 6
+  { ai: "healer",  role: "tank",    moves: [{ id: "dispel", chance: 0.2 }] },                     // 7
+  { ai: "mage",    role: "normal",  moves: [{ id: "fog", chance: 0.18 }] },                       // 8
+  { ai: "charger", role: "bruiser", moves: [{ id: "multi", chance: 0.2 }] },                      // 9
+  { ai: "super",   role: "nuker", superMult: 6, exposeOnCharge: true, moves: [{ id: "silence", chance: 0.2 }] }, // 10
+  { ai: "plain",   role: "tank",    enrage: 1.4, moves: [{ id: "comboseal", chance: 0.2 }] },     // 11 暴走
+  { ai: "fire",    role: "cannon",  moves: [{ id: "timecrush", chance: 0.2 }] },                  // 12
+  { ai: "healer",  role: "bruiser", moves: [{ id: "spdrain", chance: 0.2 }] },                    // 13
+  { ai: "mage",    role: "cannon",  moves: [{ id: "hardnext", chance: 0.2 }] },                   // 14
+  { ai: "charger", role: "bruiser", moves: [{ id: "crit", chance: 0.2 }, { id: "multi", chance: 0.15 }] }, // 15
+  { ai: "super",   role: "nuker", superMult: 7, exposeOnCharge: true, moves: [{ id: "curse", chance: 0.18 }, { id: "silence", chance: 0.18 }] }, // 16
+  { ai: "fire",    role: "cannon",  moves: [{ id: "panic", chance: 0.2 }, { id: "pierce", chance: 0.15 }] }, // 17
+  { ai: "mage",    role: "cannon",  moves: [{ id: "fog", chance: 0.2 }, { id: "hardnext", chance: 0.15 }] }, // 18
+  { ai: "charger", role: "tank",    thorns: 0.2, moves: [{ id: "barrier", chance: 0.25 }] },      // 19
+  { ai: "super",   role: "nuker", superMult: 8, exposeOnCharge: true, moves: [{ id: "decoy", chance: 0.25 }, { id: "timesteal", chance: 0.2 }] }, // 20
 ];
 
 // ── 小単元モンスターを学年（ワールド）ごとに自動生成 ──
@@ -269,6 +275,10 @@ for (const g of GRADE_WORLDS) {
         role: prof.role,
         roleTag: role.tag,
         superMult: prof.superMult,
+        moves: prof.moves,                  // 敵スキル（確率発動）
+        thorns: prof.thorns,                // パッシブ：反射ダメージ
+        enrage: prof.enrage,                // パッシブ：HP半分以下で攻撃UP
+        exposeOnCharge: prof.exposeOnCharge,// パッシブ：チャージ中は被ダメ2倍
         color: art.color,
         pools: [{ c: chap.id, u: u.id }],
         art: artKey,
@@ -302,7 +312,19 @@ for (const g of GRADE_WORLDS) {
       ai: "super",
       role: "boss",
       roleTag: "章ボス・超必殺",
-      superMult: 4,
+      superMult: 6,            // チャージ1ターン→大ダメージ（ためすぎないぶん一撃を強く）
+      chargeNeed: 1,           // チャージは1ターンだけ（その隙に削りきるチャンス）
+      exposeOnCharge: true,    // チャージ中は被ダメ2倍
+      enrage: 1.5,             // 半分以下で猛攻
+      // ほとんどのターンは多彩な技＆攻撃。たまに1ターンだけためて大技。
+      moves: [
+        { id: "crit", chance: 0.3 },
+        { id: "multi", chance: 0.28 },
+        { id: "pierce", chance: 0.22 },
+        { id: "curse", chance: 0.22 },
+        { id: "barrier", chance: 0.2 },
+        { id: "hardnext", chance: 0.2 },
+      ],
       color: chap.color,
       pools: chap.units.map((u) => ({ c: chap.id, u: u.id })),
       bossAdvancedOnly: true,
@@ -331,7 +353,25 @@ for (const g of GRADE_WORLDS) {
     ai: "super",
     role: "boss",
     roleTag: "最終ボス・超必殺",
-    superMult: 4,
+    superMult: 6,            // チャージ1ターン→大ダメージ
+    chargeNeed: 1,           // チャージは1ターンだけ
+    exposeOnCharge: true,    // チャージ中は弱点露出
+    enrage: 1.6,             // 半分以下で大暴走
+    revive: true,            // 不死：一度だけ半分HPで復活
+    // 最終ボス：毎ターンのように多彩な技と攻撃。たまに1ターンためて超必殺。
+    moves: [
+      { id: "crit", chance: 0.32 },
+      { id: "multi", chance: 0.28 },
+      { id: "pierce", chance: 0.24 },
+      { id: "silence", chance: 0.22 },
+      { id: "curse", chance: 0.22 },
+      { id: "timesteal", chance: 0.22 },
+      { id: "hardnext", chance: 0.2 },
+      { id: "spdrain", chance: 0.2 },
+      { id: "decoy", chance: 0.22 },
+      { id: "eregen", chance: 0.2 },
+      { id: "fog", chance: 0.18 },
+    ],
     color: ART.boss.color,
     pools: allUnitsG,
     bossAdvancedOnly: true,

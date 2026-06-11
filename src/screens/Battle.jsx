@@ -94,6 +94,36 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
   const reviveRef = useRef(false);    // HP0で一度だけ復活
   const winBonusRef = useRef({ coins: 0, crystals: 0 }); // 勝利時ボーナスの累積
   const [buffTags, setBuffTags] = useState([]); // 画面上のバフ表示用（簡易）
+
+  // ── 敵スキルで受ける「プレイヤーへのデバフ」（refで即時参照／UIにも出す）──
+  const timeDebuffRef = useRef(null); // { turns, mult<1 } 次の数問の制限時間を短縮（時間どろぼう／時間圧縮）
+  const panicRef = useRef(null);      // { turns } タイマーが見えなくなる（あせり）
+  const comboSealRef = useRef(null);  // { turns } コンボが伸びなくなる（コンボ封じ）
+  const silenceRef = useRef(null);    // { turns } スキルが使えない（封印）
+  const curseRef = useRef(null);      // { turns, mult<1 } 与ダメージ低下（呪い）
+  const forceHardRef = useRef(null);  // { turns } 出題が必ず発展になる（難問化）
+  const fogRef = useRef(null);        // { turns } 問題が一瞬かくれる（沈黙の霧）
+  const enemyRegenRef = useRef(null); // { turns, pct } 敵が毎ターン自己回復（再生）
+  const enemyRevivedRef = useRef(false); // 不死：一度だけ復活したか
+  const monsterShieldRef = useRef(0); // 敵のバリア／みがわりの残量（ダメージを肩代わり）
+  const monsterHpRef = useRef(monster.hp); // enrage（暴走）判定用に最新の敵HPを持つ
+  useEffect(() => { monsterHpRef.current = monsterHp; }, [monsterHp]);
+  const [debuffTags, setDebuffTags] = useState([]); // 画面上のデバフ表示用
+  const [monsterShield, setMonsterShield] = useState(0); // バリア残量（表示用）
+  const [panicOn, setPanicOn] = useState(false); // タイマー隠し（表示用）
+  const [fogOn, setFogOn] = useState(false);     // 問題かくし（表示用）
+  // デバフ表示の再計算
+  function refreshDebuffTags() {
+    const tags = [];
+    if (timeDebuffRef.current) tags.push({ icon: "⏳", color: "#38bdf8" });
+    if (panicRef.current) tags.push({ icon: "😵", color: "#c084fc" });
+    if (comboSealRef.current) tags.push({ icon: "💔", color: "#f472b6" });
+    if (silenceRef.current) tags.push({ icon: "🔇", color: "#94a3b8" });
+    if (curseRef.current) tags.push({ icon: "💀", color: "#a78bfa" });
+    if (forceHardRef.current) tags.push({ icon: "📈", color: "#fb923c" });
+    setDebuffTags(tags);
+  }
+  const setMonsterShieldBoth = (v) => { const n = Math.max(0, Math.round(v)); monsterShieldRef.current = n; setMonsterShield(n); };
   // 画面のバフ表示を再計算
   function refreshBuffTags() {
     const tags = [];
@@ -145,18 +175,50 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
       });
       poisonRef.current = ps.turns - 1 > 0 ? { ...ps, turns: ps.turns - 1 } : null;
     }
-    setQ((cur) => genBattleProblem(monster, cur?.id));
+    // 敵の再生（強リジェネ）：1ターンごとに敵HPを少し回復
+    const er = enemyRegenRef.current;
+    if (er && er.turns > 0) {
+      const amt = Math.max(1, Math.round(monster.hp * er.pct));
+      setMonsterHp((hp) => Math.min(monster.hp, hp + amt));
+      enemyRegenRef.current = er.turns - 1 > 0 ? { ...er, turns: er.turns - 1 } : null;
+    }
+    // 難問化（敵デバフ）：残っていれば次の問題を必ず発展で出す
+    const fh = forceHardRef.current;
+    const forceLevel = fh && fh.turns > 0 ? "advanced" : null;
+    if (fh && fh.turns > 0) forceHardRef.current = fh.turns - 1 > 0 ? { ...fh, turns: fh.turns - 1 } : null;
+    setQ((cur) => genBattleProblem(monster, cur?.id, forceLevel));
     setInput("");
     setLocked(false); lockedRef.current = false;
-    // 制限時間：時間バフ（しゅうちゅう／タイムフリーズ等）があれば伸ばす
+    // 制限時間：時間バフ（しゅうちゅう等）で伸ばし、敵デバフ（時間どろぼう等）で縮める
     const tb = timeBuffRef.current;
     let t = stats.timer;
     if (tb && tb.turns > 0) {
       t = tb.inf ? 99 : Math.min(99, Math.ceil(stats.timer * (tb.mult ?? 1.5)));
       timeBuffRef.current = tb.turns - 1 > 0 ? { ...tb, turns: tb.turns - 1 } : null;
     }
+    const td = timeDebuffRef.current;
+    if (td && td.turns > 0) {
+      t = Math.max(2, Math.floor(t * (td.mult ?? 0.6)));
+      timeDebuffRef.current = td.turns - 1 > 0 ? { ...td, turns: td.turns - 1 } : null;
+    }
     setTimerBoth(t);
+    // あせり（タイマー隠し）の残ターン消化
+    const pn = panicRef.current;
+    if (pn && pn.turns > 0) { setPanicOn(true); panicRef.current = pn.turns - 1 > 0 ? { ...pn, turns: pn.turns - 1 } : null; }
+    else { setPanicOn(false); }
+    // 沈黙の霧：この問題だけ一瞬かくす（1.1秒で晴れる）。1問で消費。
+    const fg = fogRef.current;
+    if (fg && fg.turns > 0) {
+      setFogOn(true);
+      setTimeout(() => setFogOn(false), 1100);
+      fogRef.current = fg.turns - 1 > 0 ? { ...fg, turns: fg.turns - 1 } : null;
+    } else { setFogOn(false); }
+    // 各種残ターンの消化（コンボ封じ／封印／呪い）
+    const cs = comboSealRef.current; if (cs && cs.turns > 0) comboSealRef.current = cs.turns - 1 > 0 ? { ...cs, turns: cs.turns - 1 } : null;
+    const sl = silenceRef.current;   if (sl && sl.turns > 0) silenceRef.current = sl.turns - 1 > 0 ? { ...sl, turns: sl.turns - 1 } : null;
+    const cu = curseRef.current;     if (cu && cu.turns > 0) curseRef.current = cu.turns - 1 > 0 ? { ...cu, turns: cu.turns - 1 } : null;
     refreshBuffTags();
+    refreshDebuffTags();
   }
 
   // SPを変更して即保存（バトルをまたいで維持されるよう App 側へ通知）
@@ -170,6 +232,7 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
   // スキル発動（SPを消費）。time2x=回答時間2倍 / ultimate=必殺技（基本ダメージのmult倍）
   function useSkill(skill) {
     if (phaseRef.current !== "fight" || endedRef.current || lockedRef.current) return;
+    if (silenceRef.current) { setLog("🔇 スキルが封印されている！（あと数問でとける）"); return; }
     if (sp < skill.cost) return;
     changeSp(sp - skill.cost);
     const isUlt = skill.kind === "ultimate" || skill.kind === "drain" || (skill.kind === "burst" && (skill.mult ?? 0) > 0);
@@ -299,6 +362,18 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
 
   function triggerWin() {
     if (endedRef.current) return;
+    // 不死（erevive）：HP0でも一度だけ半分のHPで復活（勝利を取り消して継戦）
+    if (monster.revive && !enemyRevivedRef.current) {
+      enemyRevivedRef.current = true;
+      const half = Math.ceil(monster.hp / 2);
+      setMonsterHp(half); monsterHpRef.current = half;
+      setMonState("idle"); setAnimKey((k) => k + 1);
+      showEnemyFx({ icon: "🪦", label: "不死の力で復活！", color: "#e879f9" });
+      setEnemyIntent({ text: "🪦 不死の力で復活した！", color: "#e879f9" });
+      setLog(`${monster.name} は不死の力で復活した…！`);
+      sfx.skill({ ult: true });
+      return;
+    }
     endedRef.current = true;
     // 勝利ボーナス（ついてる／クリスタルラック等のスキル効果）を反映
     const wb = winBonusRef.current;
@@ -349,11 +424,15 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
   }
 
   // 敵の攻撃を実際に当てる（ガード・画面ゆれ・被ダメ・敗北判定）
-  function enemyHit(rawDmg, label, fx) {
+  //  opts.pierce=true … ガードを無視（防御貫通）
+  function enemyHit(rawDmg, label, fx, opts = {}) {
+    // 暴走（enrage）：敵HPが半分以下になると攻撃力アップ
+    let scaled = rawDmg;
+    if (monster.enrage && monsterHpRef.current <= monster.hp * 0.5) scaled = rawDmg * monster.enrage;
     // 1パン防止：1回の被ダメは最大HPの70%まで（満タンからの即死を避ける）
-    let dmg = Math.max(1, Math.min(Math.round(rawDmg), Math.ceil(stats.maxHp * 0.7)));
+    let dmg = Math.max(1, Math.min(Math.round(scaled), Math.ceil(stats.maxHp * 0.7)));
     let guarded = false, invinc = false;
-    const gb = guardBuffRef.current;
+    const gb = opts.pierce ? null : guardBuffRef.current; // 貫通はガードを無視
     if (gb && gb.turns > 0) {
       if ((gb.reduce ?? 0.5) <= 0) { dmg = 0; invinc = true; } // 完全無敵
       else { dmg = Math.max(1, Math.round(dmg * gb.reduce)); guarded = true; }
@@ -409,7 +488,7 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
 
     // 敵の「ため」状態を予告バッジに反映
     if (monster.ai === "charger") setEnemyIntent(st.charged ? { text: "⚡ ためた！次の一撃は2倍", color: "#fbbf24" } : null);
-    else if (monster.ai === "super") setEnemyIntent(st.superCount > 0 ? { text: `💥 超必殺まであと ${ENEMY_CHARGE_NEED - st.superCount + 1}`, color: "#f472b6" } : null);
+    else if (monster.ai === "super") setEnemyIntent(st.superCount > 0 ? { text: `💥 超必殺まであと ${(monster.chargeNeed ?? ENEMY_CHARGE_NEED) - st.superCount + 1}`, color: "#f472b6" } : null);
 
     if (act.kind === "charge") {
       setCharging(true);
@@ -429,6 +508,10 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
       return;
     }
 
+    // 追加の敵スキル（連撃・会心・貫通・各種デバフ・自己強化）はここで処理。
+    // 該当すれば true を返して終了。通常攻撃系（attack/magic/fire/burst/super）は下へ。
+    if (applyEnemyMove(act, pre)) return;
+
     // 攻撃系（attack / magic / fire / burst / super）
     const FX = {
       magic: { icon: "🔮", label: "まほう！", color: "#a78bfa" },
@@ -440,6 +523,104 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
     enemyHit(monster.atk * (act.mult || 1), `${pre}${monster.name} ${act.label}`, FX[act.kind] || null);
   }
 
+  // 追加の敵スキルを適用する。処理したら true（＝通常攻撃に進まない）。
+  function applyEnemyMove(act, pre) {
+    const mfx = { icon: act.icon, label: act.label, color: act.color };
+    const chip = act.chip ? monster.atk * act.chip : 0; // デバフ系が伴う小ダメージ
+    const tag = `${pre}${monster.name} ${act.label}`;
+    switch (act.kind) {
+      // ── 攻撃バリエーション ──
+      case "multi": {
+        const hits = act.hits ?? 3;
+        showEnemyFx(mfx);
+        for (let i = 0; i < hits; i++) {
+          setTimeout(() => { if (!endedRef.current) enemyHit(monster.atk * (act.mult ?? 0.5), `${tag}（${i + 1}発目）`, i === 0 ? mfx : null); }, i * 320);
+        }
+        return true;
+      }
+      case "crit":
+        enemyHit(monster.atk * (act.mult ?? 2), tag, mfx);
+        return true;
+      case "pierce":
+        enemyHit(monster.atk * (act.mult ?? 1.1), tag, mfx, { pierce: true });
+        return true;
+      // ── 時間を狙う ──
+      case "timesteal":
+      case "timecrush":
+        timeDebuffRef.current = { turns: act.turns ?? 2, mult: act.mult ?? 0.6 };
+        refreshDebuffTags(); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      case "panic":
+        panicRef.current = { turns: act.turns ?? 2 };
+        refreshDebuffTags(); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      // ── リソース妨害 ──
+      case "comboseal":
+        comboSealRef.current = { turns: act.turns ?? 2 }; setCombo(0);
+        refreshDebuffTags(); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      case "silence":
+        silenceRef.current = { turns: act.turns ?? 2 };
+        refreshDebuffTags(); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      case "spdrain":
+        changeSp(sp - (act.amount ?? 3)); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      case "dispel":
+        dispelOnePlayerBuff(); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      case "curse":
+        curseRef.current = { turns: act.turns ?? 3, mult: act.mult ?? 0.6 };
+        refreshDebuffTags(); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      // ── 問題に干渉 ──
+      case "hardnext":
+        forceHardRef.current = { turns: act.turns ?? 2 };
+        refreshDebuffTags(); setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      case "fog":
+        fogRef.current = { turns: act.turns ?? 1 };
+        setLog(tag);
+        chip ? enemyHit(chip, tag, mfx) : showEnemyFx(mfx);
+        return true;
+      // ── 敵の自己強化（プレイヤーへの直接ダメージなし）──
+      case "barrier":
+      case "decoy":
+        setMonsterShieldBoth(monsterShieldRef.current + Math.max(1, Math.round(monster.hp * (act.pct ?? 0.25))));
+        setMonState("idle"); setAnimKey((k) => k + 1);
+        showEnemyFx(mfx); setLog(tag);
+        return true;
+      case "eregen":
+        enemyRegenRef.current = { turns: act.turns ?? 4, pct: act.pct ?? 0.06 };
+        setMonState("idle"); setAnimKey((k) => k + 1);
+        showEnemyFx(mfx); setLog(tag);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // バフ消し（ディスペル）：プレイヤーの有利な効果を1つだけ打ち消す
+  function dispelOnePlayerBuff() {
+    if (atkBuffRef.current) { setAtkBuffBoth(null); }
+    else if (guardBuffRef.current) { setGuardBuffBoth(null); }
+    else if (regenRef.current) { setRegenBoth(null); }
+    else if (critRef.current) { critRef.current = null; }
+    else if (counterRef.current) { counterRef.current = null; }
+    else if (comboKeepRef.current) { comboKeepRef.current = null; }
+    else if (doubleNextRef.current) { doubleNextRef.current = false; }
+    else if (timeBuffRef.current) { timeBuffRef.current = null; }
+    refreshBuffTags();
+  }
+
   function answer(val) {
     if (locked || phaseRef.current !== "fight" || !q || val === "" || val == null) return;
     setLocked(true); lockedRef.current = true;
@@ -447,11 +628,12 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
 
     if (ok) {
       sfx.correct();
-      const newCombo = combo + 1;
+      const sealed = !!comboSealRef.current;        // コンボ封じ中はコンボが伸びない
+      const newCombo = sealed ? 0 : combo + 1;
       setCombo(newCombo);
       changeSp(sp + 1); // 正解でSP+1（5でスキル1、10でスキル2）
       let dmg = calcDamage(stats.atk, newCombo);
-      let boosted = false, crit = false, doubled = false;
+      let boosted = false, crit = false, doubled = false, cursed = false, exposed = false;
       // クリティカル：コンボ会心ボーナス（atk×0.5）をもう一段ぶん上乗せ
       const cr = critRef.current;
       if (cr && cr.turns > 0) {
@@ -467,18 +649,38 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
       }
       // ダブルアップ：次の正解ダメージを2倍（1回だけ）
       if (doubleNextRef.current) { dmg *= 2; doubled = true; doubleNextRef.current = false; }
+      // 弱点露出：敵がチャージ中は与ダメージ2倍
+      if (charging && monster.exposeOnCharge) { dmg *= 2; exposed = true; }
+      // 呪い：与ダメージ低下
+      const cu = curseRef.current;
+      if (cu) { dmg = Math.max(1, Math.round(dmg * (cu.mult ?? 0.6))); cursed = true; }
       refreshBuffTags();
       setShowRing(true); setTimeout(() => setShowRing(false), 700);
       setHeroAtk(true); setTimeout(() => setHeroAtk(false), 340); // 自キャラ前のめり
       setCheer({ text: pickHitCheer({ streak: newCombo }), hurt: false, key: ++cheerKey.current });
       setMonState("damage"); setAnimKey((k) => k + 1);
-      setMonDmg(`-${dmg}`); setDmgKey((k) => k + 1);
+      // バリア／みがわり：あればダメージを肩代わりする
+      let toHp = dmg, absorbed = 0;
+      if (monsterShieldRef.current > 0) {
+        absorbed = Math.min(monsterShieldRef.current, toHp);
+        setMonsterShieldBoth(monsterShieldRef.current - absorbed);
+        toHp -= absorbed;
+      }
+      setMonDmg(absorbed > 0 && toHp === 0 ? "🔰" : `-${toHp || dmg}`); setDmgKey((k) => k + 1);
       setLog(
-        (doubled ? "✌️ダブルアップ！ " : "") + (crit ? "🎯会心！ " : "") + (boosted ? "💪パワーアップ！ " : "") +
+        (doubled ? "✌️ダブルアップ！ " : "") + (crit ? "🎯会心！ " : "") + (exposed ? "💥弱点ヒット！ " : "") + (boosted ? "💪パワーアップ！ " : "") + (cursed ? "💀呪いで弱体… " : "") + (absorbed > 0 ? "🔰バリアが防いだ！ " : "") +
         (newCombo >= 3 ? `正解！🔥${newCombo}コンボ ${dmg}ダメージ！` : `正解！${dmg}ダメージ！`)
       );
+      // とげ（thorns）：攻撃するたび少し反射ダメージを受ける
+      if (monster.thorns) {
+        const rfl = Math.max(1, Math.round(dmg * monster.thorns));
+        setTimeout(() => {
+          if (endedRef.current) return;
+          setPlayerHp((hp) => { const nv = Math.max(0, hp - rfl); if (nv <= 0) setTimeout(triggerLose, 400); return nv; });
+        }, 250);
+      }
       setMonsterHp((hp) => {
-        const nv = Math.max(0, hp - dmg);
+        const nv = Math.max(0, hp - toHp);
         if (nv <= 0) setTimeout(triggerWin, 350);
         else setTimeout(() => { setMonState("idle"); nextQuestion(); }, 700);
         return nv;
@@ -571,6 +773,11 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
             <div className="bt-hp-track"><div className="bt-hp-fill" style={{ width: monHpPct + "%", background: hpColor(monHpPct) }} /></div>
             <span className="bt-hp-num">{Math.max(0, monsterHp)} / {monster.hp}</span>
           </div>
+          {monsterShield > 0 && (
+            <div style={{ fontSize: 11, fontWeight: 900, color: "#93c5fd", marginTop: 2, textShadow: "0 0 6px #3b82f6" }}>
+              🔰 バリア {monsterShield}
+            </div>
+          )}
         </div>
 
         {/* モンスター舞台（自キャラ左・敵モンスター右で向かい合う） */}
@@ -630,13 +837,16 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
         {/* タイマー＋コンボ */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, color: "#88aa88" }}>のこり</span>
-          <div className="bt-timer-track" style={{ flex: 1 }}>
-            <div className="bt-timer-fill" style={{ width: timePct + "%", background: timer > stats.timer * 0.4 ? "#4ade80" : timer > stats.timer * 0.2 ? "#fbbf24" : "#f87171" }} />
+          <div className="bt-timer-track" style={{ flex: 1, opacity: panicOn ? 0.4 : 1 }}>
+            <div className="bt-timer-fill" style={{ width: (panicOn ? 100 : timePct) + "%", background: panicOn ? "#c084fc" : timer > stats.timer * 0.4 ? "#4ade80" : timer > stats.timer * 0.2 ? "#fbbf24" : "#f87171" }} />
           </div>
-          <span style={{ fontSize: 13, fontWeight: 900, color: "#cceebb", minWidth: 28, textAlign: "right" }}>{timer}</span>
+          <span style={{ fontSize: 13, fontWeight: 900, color: panicOn ? "#c084fc" : "#cceebb", minWidth: 28, textAlign: "right" }}>{panicOn ? "？" : timer}</span>
           {combo >= 2 && <span className="bt-combo">🔥{combo}</span>}
           {buffTags.map((b, i) => (
-            <span key={i} style={{ fontSize: 14, filter: `drop-shadow(0 0 3px ${b.color})` }}>{b.icon}</span>
+            <span key={"b" + i} style={{ fontSize: 14, filter: `drop-shadow(0 0 3px ${b.color})` }}>{b.icon}</span>
+          ))}
+          {debuffTags.map((b, i) => (
+            <span key={"d" + i} style={{ fontSize: 14, filter: `drop-shadow(0 0 3px ${b.color})`, opacity: 0.95 }}>{b.icon}</span>
           ))}
         </div>
 
@@ -645,7 +855,11 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
           {q ? (
             <>
               <span className="bt-q-theme">{q.unitName} ・ {q.level === "advanced" ? "発展" : "標準"}</span>
-              <div className="bt-q-text"><MathText>{q.q}</MathText></div>
+              {fogOn ? (
+                <div className="bt-q-text" style={{ color: "#cbd5e1", letterSpacing: 4 }}>🌫️ ？？？？？</div>
+              ) : (
+                <div className="bt-q-text"><MathText>{q.q}</MathText></div>
+              )}
               <div className={"ans-row" + (shakeAns ? " answer-shake" : "")}>
                 <input
                   ref={inputRef} className="ans-in" type="text" inputMode="text" value={input}

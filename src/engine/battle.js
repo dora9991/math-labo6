@@ -42,8 +42,8 @@ export function getPlayerBattleStats(lv, bonuses = {}) {
 //  クリア条件：計算王でその章を CALC_KING_CLEAR_STREAK 問連続正解（＝GOAL到達）。
 //  計算王の記録(player.calcKing)は「章ID」をキーに { bestStreak, bestTime5 } を持つ。
 export const CALC_KING_CLEAR_STREAK = 5;     // 5問連続正解＝その章の計算王クリア
-export const CALC_KING_ATK_PER_UNIT = 0.05;  // 1章クリアごとに攻撃力 +5%
-export const CALC_KING_ATK_CAP = 0.6;        // 攻撃力ボーナスの上限 +60%
+export const CALC_KING_ATK_PER_UNIT = 0.04;  // 1章クリアごとに攻撃力 +4%
+export const CALC_KING_ATK_CAP = 0.4;        // 攻撃力ボーナスの上限 +40%（装備と合わせて過剰にならないよう抑制）
 export const CALC_KING_CLEAR_CRYSTAL = 3;    // 章を初めて計算王クリアした時の専用報酬（クリスタル）
 
 /** その章が計算王クリア済みか（5問連続正解の自己ベストがあるか） */
@@ -143,8 +143,8 @@ export const BATTLE_SKILLS = [
     name: "しゅうちゅう", icon: "👓", color: "#7dd3fc", desc: "次の3問 制限時間が1.5倍" },
   { id: "haste",     slot: 1, cost: 5, rarity: "r", kind: "time2x", timeMult: 2.5,
     name: "ヘイスト", icon: "💨", color: "#22d3ee", desc: "回答時間が2.5倍になる" },
-  { id: "overdrive", slot: 1, cost: 5, rarity: "r", kind: "dmgup", turns: 3, mult: 2,
-    name: "オーバードライブ", icon: "⚙️", color: "#fb923c", desc: "3ターン 与ダメージが2倍" },
+  { id: "overdrive", slot: 1, cost: 5, rarity: "r", kind: "dmgup", turns: 3, mult: 1.7,
+    name: "オーバードライブ", icon: "⚙️", color: "#fb923c", desc: "3ターン 与ダメージが1.7倍" },
   { id: "burstheal", slot: 1, cost: 5, rarity: "r", kind: "heal", value: 0.5,
     name: "バーストヒール", icon: "✨", color: "#4ade80", desc: "HPを最大の50%回復する" },
   { id: "ironwall",  slot: 1, cost: 5, rarity: "r", kind: "guard", reduce: 0.34, turns: 3,
@@ -157,14 +157,14 @@ export const BATTLE_SKILLS = [
     name: "コンボキープ", icon: "🔗", color: "#fbbf24", desc: "3ターン 1回ミスしてもコンボ維持" },
 
   // ── スロット2（SP10枠）──
-  { id: "ultimate",  slot: 2, cost: 10, rarity: "n", kind: "ultimate", mult: 7,
-    name: "必殺技", icon: "💥", color: "#f472b6", desc: "基本ダメージの7倍を直接あたえる" },
-  { id: "drain",     slot: 2, cost: 10, rarity: "r", kind: "drain", mult: 8, drain: 0.4,
-    name: "ドレイン", icon: "🧛", color: "#a78bfa", desc: "8倍ダメージ＋40%ぶんHP回復" },
-  { id: "meteor",    slot: 2, cost: 10, rarity: "sr", kind: "ultimate", mult: 12,
-    name: "メテオ", icon: "☄️", color: "#f97316", desc: "基本ダメージの12倍を直接あたえる" },
-  { id: "judgment",  slot: 2, cost: 10, rarity: "sr", kind: "drain", mult: 9, drain: 0.5,
-    name: "天罰", icon: "⚡", color: "#facc15", desc: "9倍ダメージ＋50%ぶんHP回復" },
+  { id: "ultimate",  slot: 2, cost: 10, rarity: "n", kind: "ultimate", mult: 5,
+    name: "必殺技", icon: "💥", color: "#f472b6", desc: "基本ダメージの5倍を直接あたえる" },
+  { id: "drain",     slot: 2, cost: 10, rarity: "r", kind: "drain", mult: 5, drain: 0.4,
+    name: "ドレイン", icon: "🧛", color: "#a78bfa", desc: "5倍ダメージ＋40%ぶんHP回復" },
+  { id: "meteor",    slot: 2, cost: 10, rarity: "sr", kind: "ultimate", mult: 7,
+    name: "メテオ", icon: "☄️", color: "#f97316", desc: "基本ダメージの7倍を直接あたえる" },
+  { id: "judgment",  slot: 2, cost: 10, rarity: "sr", kind: "drain", mult: 6, drain: 0.5,
+    name: "天罰", icon: "⚡", color: "#facc15", desc: "6倍ダメージ＋50%ぶんHP回復" },
   { id: "fullheal",  slot: 2, cost: 10, rarity: "sr", kind: "heal", value: 1.0,
     name: "フルヒール", icon: "🍶", color: "#22c55e", desc: "HPを全回復する（100%）" },
   { id: "invincible",slot: 2, cost: 10, rarity: "sr", kind: "guard", reduce: 0, turns: 1,
@@ -173,22 +173,22 @@ export const BATTLE_SKILLS = [
     name: "クリティカル", icon: "🎯", color: "#fb7185", desc: "3ターン コンボ会心ボーナス2倍" },
   { id: "counter",   slot: 2, cost: 10, rarity: "sr", kind: "counter", turns: 3, mult: 2,
     name: "カウンター", icon: "🪃", color: "#38bdf8", desc: "3ターン 被弾するたび反撃" },
-  { id: "thunder",   slot: 2, cost: 10, rarity: "sr", kind: "burst", mult: 10, buffMult: 1.5, buffTurns: 2,
-    name: "サンダーストーム", icon: "🌩️", color: "#818cf8", desc: "10倍の一撃＋2ターン与ダメ1.5倍" },
+  { id: "thunder",   slot: 2, cost: 10, rarity: "sr", kind: "burst", mult: 6, buffMult: 1.5, buffTurns: 2,
+    name: "サンダーストーム", icon: "🌩️", color: "#818cf8", desc: "6倍の一撃＋2ターン与ダメ1.5倍" },
   { id: "timefreeze",slot: 2, cost: 10, rarity: "sr", kind: "timebuff", turns: 2, inf: true,
     name: "タイムフリーズ", icon: "⏱️", color: "#67e8f9", desc: "次の2問 制限時間なし" },
-  { id: "ultima",    slot: 2, cost: 10, rarity: "ssr", kind: "ultimate", mult: 15,
-    name: "アルティマ", icon: "🌌", color: "#e879f9", desc: "基本ダメージの15倍を直接あたえる" },
+  { id: "ultima",    slot: 2, cost: 10, rarity: "ssr", kind: "ultimate", mult: 8,
+    name: "アルティマ", icon: "🌌", color: "#e879f9", desc: "基本ダメージの8倍を直接あたえる" },
   { id: "phoenix",   slot: 2, cost: 10, rarity: "ssr", kind: "revive",
     name: "フェニックス", icon: "🕊️", color: "#fb923c", desc: "HP0でも1回だけ全回復で復活" },
-  { id: "genocide",  slot: 2, cost: 10, rarity: "ssr", kind: "drain", mult: 20, drain: 0.3,
-    name: "ジェノサイド", icon: "💀", color: "#f43f5e", desc: "20倍ダメージ＋30%ぶんHP回復" },
+  { id: "genocide",  slot: 2, cost: 10, rarity: "ssr", kind: "drain", mult: 9, drain: 0.3,
+    name: "ジェノサイド", icon: "💀", color: "#f43f5e", desc: "9倍ダメージ＋30%ぶんHP回復" },
   { id: "zerocount", slot: 2, cost: 10, rarity: "ssr", kind: "burst", mult: 0, buffMult: 1.5, buffTurns: 99, timeInf: 99,
     name: "ゼロカウント", icon: "⌛", color: "#c4b5fd", desc: "以降ずっと時間無制限＋与ダメ1.5倍" },
   { id: "crystalluck",slot: 2, cost: 10, rarity: "ssr", kind: "winbonus", coins: 150, crystals: 1,
     name: "クリスタルラック", icon: "💎", color: "#67e8f9", desc: "勝つとコイン+150＆クリスタル+1" },
-  { id: "overload",  slot: 2, cost: 10, rarity: "ssr", kind: "burst", mult: 0, buffMult: 3, buffTurns: 5, regenPct: 0.1, regenTurns: 5,
-    name: "オーバーロード", icon: "👑", color: "#fbbf24", desc: "5ターン 与ダメ3倍＋毎ターンHP10%回復" },
+  { id: "overload",  slot: 2, cost: 10, rarity: "ssr", kind: "burst", mult: 0, buffMult: 2, buffTurns: 5, regenPct: 0.1, regenTurns: 5,
+    name: "オーバーロード", icon: "👑", color: "#fbbf24", desc: "5ターン 与ダメ2倍＋毎ターンHP10%回復" },
 ];
 
 // ── スキルガチャ：レア度の定義（重み＝出やすさ%、色・ラベル） ──
@@ -286,7 +286,7 @@ export const ENEMY_AI = {
   healer:  { label: "回復型",  healChance: 0.35, healPct: 0.12 },
   mage:    { label: "魔法型",  magicChance: 0.40, magicMult: 1.6 },
   charger: { label: "ためる型", chargeChance: 0.45, burstMult: 2 },
-  super:   { label: "超必殺型", chargeNeed: 2, superMult: 5 },
+  super:   { label: "超必殺型", chargeNeed: 1, superMult: 5 }, // チャージは1ターンだけ→即・大ダメージ（ためすぎは弱い）
   fire:    { label: "炎型",    fireChance: 0.5, fireMult: 2 },
 };
 
@@ -298,24 +298,75 @@ export const ENEMY_AI = {
  *   act.kind: "attack" | "magic" | "fire" | "burst" | "super" | "heal" | "charge"
  *   act.mult: ダメージ倍率（攻撃系）/ act.healPct: 回復割合（heal）
  */
-// opts: モンスターごとの技の強さ上書き（superMult/burstMult/magicMult/fireMult/healPct）
+// ── 敵スキル（技）カタログ ──────────────────────────────
+//  モンスターに `moves: [{ id, chance }]` を持たせると、その敵のターン（プレイヤーの
+//  ミス・時間切れ）に確率で発動する。kind は Battle.jsx の applyEnemyMove が解釈する。
+//  ※バトルはテキスト入力式・敵はプレイヤーのミス時のみ行動するため、効果は「次の数問
+//    に効くデバフ」中心。多くは小ダメージ(chip)も伴い、ミスのリスクを上げる。
+//
+//  分類：
+//   攻撃バリエーション … multi(連撃) / crit(会心) / pierce(貫通)
+//   時間を狙う        … timesteal(時間どろぼう) / panic(あせり) / timecrush(時間圧縮)
+//   リソース妨害      … comboseal(コンボ封じ) / silence(封印) / spdrain(SP吸収)
+//                       / dispel(バフ消し) / curse(呪い)
+//   問題に干渉        … hardnext(難問化) / fog(沈黙の霧)
+//   敵の自己強化      … barrier(バリア) / decoy(みがわり) / eregen(再生)
+//  （enrage(暴走)/thorns(とげ)/erevive(不死)/expose(弱点露出)/longsuper(長詠唱)は
+//    モンスター固有プロパティで実装：monster.enrage/thorns/revive/exposeOnCharge/chargeNeed）
+export const ENEMY_MOVES = {
+  // 攻撃バリエーション（ダメージ系）
+  multi:     { kind: "multi",  hits: 3, mult: 0.5, label: "の連続攻撃！", icon: "👊", color: "#fb7185" },
+  crit:      { kind: "crit",   mult: 2,            label: "の会心の一撃！", icon: "⭐", color: "#fde047" },
+  pierce:    { kind: "pierce", mult: 1.1,          label: "の防御貫通攻撃！", icon: "🗡️", color: "#f87171" },
+  // 時間を狙う
+  timesteal: { kind: "timesteal", turns: 3, mult: 0.6, chip: 0.5, label: "が時間をぬすんだ！", icon: "⏳", color: "#38bdf8" },
+  panic:     { kind: "panic",     turns: 2,            chip: 0.5, label: "があせらせてくる！", icon: "😵", color: "#c084fc" },
+  timecrush: { kind: "timecrush", turns: 1, mult: 0.35, chip: 0.4, label: "が時間を圧縮した！", icon: "⌛", color: "#22d3ee" },
+  // リソース妨害
+  comboseal: { kind: "comboseal", turns: 2, chip: 0.5, label: "がコンボを封じた！", icon: "💔", color: "#f472b6" },
+  silence:   { kind: "silence",   turns: 2, chip: 0.5, label: "がスキルを封印した！", icon: "🔇", color: "#94a3b8" },
+  spdrain:   { kind: "spdrain",   amount: 3, chip: 0.4, label: "がSPを吸収した！", icon: "🌀", color: "#818cf8" },
+  dispel:    { kind: "dispel",    chip: 0.4, label: "がバフを打ち消した！", icon: "✖️", color: "#fca5a5" },
+  curse:     { kind: "curse",     turns: 3, mult: 0.6, chip: 0.4, label: "が呪いをかけた！", icon: "💀", color: "#a78bfa" },
+  // 問題に干渉
+  hardnext:  { kind: "hardnext", turns: 2, chip: 0.4, label: "が問題を難しくした！", icon: "📈", color: "#fb923c" },
+  fog:       { kind: "fog",      turns: 1, chip: 0.4, label: "が霧で問題をかくした！", icon: "🌫️", color: "#cbd5e1" },
+  // 敵の自己強化
+  barrier:   { kind: "barrier", pct: 0.25, label: "がバリアを張った！", icon: "🔰", color: "#60a5fa" },
+  decoy:     { kind: "decoy",   pct: 0.35, label: "はみがわりを出した！", icon: "🎎", color: "#f9a8d4" },
+  eregen:    { kind: "eregen",  turns: 4, pct: 0.06, label: "は再生をはじめた！", icon: "♻️", color: "#34d399" },
+};
+
+// opts: モンスターごとの技の強さ上書き（superMult/burstMult/magicMult/fireMult/healPct/chargeNeed）
 export function enemyDecide(aiId, state = {}, opts = {}) {
   const ai = ENEMY_AI[aiId] || ENEMY_AI.plain;
   const st = { charged: !!state.charged, superCount: state.superCount || 0 };
   const r = Math.random();
+  const chargeNeed = opts.chargeNeed ?? ai.chargeNeed; // 長詠唱（chargeNeed=3 など）に対応
 
+  // ── まず追加の敵スキル（monster.moves）を確率で判定 ──
+  //  super/charger は通常チャージに専念して moves を使わないので、先に判定して
+  //  「ためている合間にときどき特殊技を撃つ」厚みを出す。チャージ予告中
+  //  (st.charged / superCount>0) は予告を裏切らないよう moves はスキップ。
+  const moves = Array.isArray(opts.moves) ? opts.moves : null;
+  const midCharge = st.charged || st.superCount > 0;
+  if (moves && !midCharge) {
+    for (const m of moves) {
+      const def = ENEMY_MOVES[m && m.id];
+      if (def && Math.random() < (m.chance ?? 0.22)) return { st, act: { ...def } };
+    }
+  }
+
+  // ── 既存アーキタイプの予告つき大技 ──
   if (aiId === "charger") {
     if (st.charged) { st.charged = false; return { st, act: { kind: "burst", mult: opts.burstMult ?? ai.burstMult, label: "ためた一撃！" } }; }
     if (r < ai.chargeChance) { st.charged = true; return { st, act: { kind: "charge", label: "力をためている…！" } }; }
-    return { st, act: { kind: "attack", mult: 1, label: "の攻撃！" } };
   }
-
   if (aiId === "super") {
-    if (st.superCount >= ai.chargeNeed) { st.superCount = 0; return { st, act: { kind: "super", mult: opts.superMult ?? ai.superMult, label: "超必殺技さくれつ！" } }; }
+    if (st.superCount >= chargeNeed) { st.superCount = 0; return { st, act: { kind: "super", mult: opts.superMult ?? ai.superMult, label: "超必殺技さくれつ！" } }; }
     st.superCount += 1;
     return { st, act: { kind: "charge", label: "エネルギーをためている…！" } };
   }
-
   if (aiId === "healer" && r < ai.healChance) return { st, act: { kind: "heal", healPct: opts.healPct ?? ai.healPct, label: "キズをいやした！" } };
   if (aiId === "mage" && r < ai.magicChance) return { st, act: { kind: "magic", mult: opts.magicMult ?? ai.magicMult, label: "の魔法こうげき！" } };
   if (aiId === "fire" && r < ai.fireChance) return { st, act: { kind: "fire", mult: opts.fireMult ?? ai.fireMult, label: "の炎のブレス！" } };
@@ -332,8 +383,8 @@ const BATTLE_LEVELS = ["standard", "standard", "advanced"];
  * @param {object} monster MONSTERS の1体（pools を持つ）
  * @param {string|null} lastId 直前の問題ID
  */
-export function genBattleProblem(monster, lastId = null) {
-  const levels = monster.bossAdvancedOnly ? ["advanced"] : BATTLE_LEVELS;
+export function genBattleProblem(monster, lastId = null, forceLevel = null) {
+  const levels = forceLevel ? [forceLevel] : monster.bossAdvancedOnly ? ["advanced"] : BATTLE_LEVELS;
   for (let attempt = 0; attempt < 20; attempt++) {
     const pool = pick(monster.pools);
     const unit = pool && findUnit(pool.c, pool.u);
