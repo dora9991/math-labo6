@@ -6,6 +6,7 @@
 // ============================================================
 import { useState, useEffect } from "react";
 import Header from "../components/Header.jsx";
+import MonsterSprite from "../components/MonsterSprite.jsx";
 import { MONSTERS } from "../data/monsters.js";
 import { allChapters } from "../data/index.js";
 import { getPlayerBattleStats, battleBonuses } from "../engine/battle.js";
@@ -103,7 +104,7 @@ export default function BattleSelect({ player, clearedIds, onSelect, onBack, onS
           }}>CLEAR!</div>
         )}
         <div className="bt-select-mini" style={{ borderColor: m.color }}>
-          <svg viewBox="0 0 140 140" style={{ width: 64, height: 64, overflow: "visible" }} dangerouslySetInnerHTML={{ __html: m.svgDefs + m.svg }} />
+          <MonsterSprite monster={m} mini />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 900, color: m.color }}>

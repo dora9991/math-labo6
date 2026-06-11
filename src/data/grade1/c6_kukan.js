@@ -71,7 +71,7 @@ export const chapter = {
         ],
         advanced: [
           p("k3a1", (r) => { const rad = r(2, 4), h = r(2, 6); return { q: `底面半径${rad}cm・高さ${h}cmの円柱の表面積は □π cm²。□は？`, ans: 2 * rad * rad + 2 * rad * h, h1: "表面積=2πr²+2πrh なので□=2r²+2rh", h2: `2×${rad}²+2×${rad}×${h}=${2 * rad * rad + 2 * rad * h}` }; }),
-          p("k3a2", (r) => { const rad = r(2, 4), l = r(rad + 2, 8); return { q: `底面半径${rad}cm・母線${l}cmの円錐の展開図で側面の扇形の中心角は？（整数）`, ans: Math.round(360 * rad / l), h1: "360×(半径/母線)", h2: `${Math.round(360 * rad / l)}°` }; }),
+          p("k3a2", (r) => { const tri = [[2, 3, 240], [2, 4, 180], [2, 5, 144], [2, 6, 120], [2, 8, 90], [3, 4, 270], [3, 5, 216], [3, 6, 180], [4, 5, 288], [4, 6, 240], [4, 8, 180]]; const [rad, l, ang] = tri[r(0, tri.length - 1)]; return { q: `底面半径${rad}cm・母線${l}cmの円錐の展開図で側面の扇形の中心角は？`, ans: ang, h1: "360×(半径/母線)", h2: `360×${rad}/${l}=${ang}°` }; }),
         ],
       },
     },

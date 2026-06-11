@@ -90,7 +90,8 @@ export const LEVEL_NAMES = new Proxy({}, { get: (_, k) => levelTitle(Number(k) |
 
 // ── タイムアタックの星 ────────────────────────────
 export const STAR_TARGET = {
-  easy: { s1: 6, s2: 9, s3: 12 },
+  // easy は「速さゲー」になり苦手な子が★0で詰む問題があったため緩和（6/9/12→4/7/10）。
+  easy: { s1: 4, s2: 7, s3: 10 },
   standard: { s1: 4, s2: 6, s3: 8 },
   advanced: { s1: 2, s2: 3, s3: 5 },
 };
@@ -117,13 +118,18 @@ export function timeAttackCoins({ correct = 0, stars = 0 }) {
 
 // タイムアタックでクリスタルがもらえる最低正答率（連打・あてずっぽう除けの基準）。
 export const TA_CRYSTAL_MIN_ACCURACY = 0.6;
+// 救済ルートの最低正解数（★1に届かなくても、これだけ正解＋正答率を満たせば+1）。
+export const TA_CRYSTAL_MIN_CORRECT = 3;
 /** タイムアタック1回でもらえるクリスタル数（0 or 1）。
- *  条件：星を1つ以上 かつ 正答率が TA_CRYSTAL_MIN_ACCURACY 以上
- *  （適当な連打＝正答率が明らかに低い回はもらえない）。 */
+ *  条件：正答率が TA_CRYSTAL_MIN_ACCURACY 以上 かつ
+ *        「★1以上」または「正解 TA_CRYSTAL_MIN_CORRECT 個以上」。
+ *  → 苦手で★に届かない子も、ちゃんと正解できていればもらえる救済つき。
+ *    連打（低正答率）や1問だけ正解は除外。 */
 export function timeAttackCrystal({ correct = 0, wrong = 0, stars = 0 }) {
   const total = correct + wrong;
   const acc = total > 0 ? correct / total : 0;
-  return stars >= 1 && acc >= TA_CRYSTAL_MIN_ACCURACY ? 1 : 0;
+  if (acc < TA_CRYSTAL_MIN_ACCURACY) return 0;
+  return stars >= 1 || correct >= TA_CRYSTAL_MIN_CORRECT ? 1 : 0;
 }
 
 /** 連続正解ボーナス：5連続以上の正解は1問ごとに+1、10連続以上は+2 上乗せ。

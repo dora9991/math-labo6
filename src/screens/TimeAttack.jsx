@@ -14,6 +14,7 @@ import Stars from "../components/Stars.jsx";
 import { BigWord } from "../components/Decorations.jsx";
 import MathText from "../components/MathText.jsx";
 import MonsterSprite from "../components/MonsterSprite.jsx";
+import HeroImg from "../components/HeroImg.jsx";
 import { heroImageFor } from "../data/heroes.js";
 import { MONSTERS } from "../data/monsters.js";
 import { monsterImageUrl } from "../data/monsterImages.js";
@@ -37,8 +38,8 @@ const DAILY_BONUS_XP = 50;  // その日の初クリア（星1以上）に一度
 // 単元（章）ごとの制限時間。基本は40秒。途中計算（式を書く・読み取る）が
 // 必要な単元ほど長く取る：軽い=40 / 途中計算=60 / 重い=80 / 最重量=100。
 const TA_TIME_BY_CHAPTER = {
-  // ── 中1 ──
-  c1: 40, c2: 40, c3: 60, c4: 40, c5: 40, c6: 60, c7: 40,
+  // ── 中1 ── 標準中心の計算章(c1/c2/c4)は普通の子が標準★1を安定して取れるよう+10秒
+  c1: 50, c2: 50, c3: 60, c4: 50, c5: 40, c6: 60, c7: 40,
   // ── 中2 ──
   g2c1: 60, g2c2: 100, g2c3: 60, g2c4: 40, g2c5: 40, g2c6: 60,
   // ── 中3 ──
@@ -122,7 +123,6 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
   const [cheer, setCheer] = useState(null);         // 応援の吹き出し { text, fever, key }
   const [killPop, setKillPop] = useState(null);     // 「○体！」ポップ
   const [feverOn, setFeverOn] = useState(false);    // フィーバー突入演出（1回だけ）
-  const heroUrl = heroImageFor(player.avatar);
 
   // 最初の問題の選択肢を用意
   useEffect(() => { if (q) { setChoices(choicesFor(q)); recentRef.current = [q.id]; } }, []); // eslint-disable-line
@@ -429,10 +429,8 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
           {cheer && (
             <div key={cheer.key} className={"ta-cheer" + (cheer.fever ? " fever" : "")}>{cheer.text}</div>
           )}
-          {/* 自分のキャラ */}
-          {heroUrl && (
-            <img src={heroUrl} alt="あなた" draggable={false} className={"ta-hero" + (heroAtk ? " attack" : "")} />
-          )}
+          {/* 自分のキャラ（白背景を透明化＋白フチ） */}
+          <HeroImg src={heroImageFor(player.avatar)} alt="あなた" className={"ta-hero hero-cutout" + (heroAtk ? " attack" : "")} />
           {/* モンスター */}
           <div style={{ position: "relative", marginBottom: 6 }}>
             {showRing && <div className="correct-ring show" />}

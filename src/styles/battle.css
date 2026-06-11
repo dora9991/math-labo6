@@ -433,8 +433,17 @@
 .ta-hero {
   position: absolute; left: 6px; bottom: -6px; height: 118px; width: auto;
   max-width: 42%; object-fit: contain; z-index: 3; pointer-events: none;
-  filter: drop-shadow(0 6px 8px rgba(0,0,0,.5));
   transform-origin: center bottom;
+}
+/* 立ち絵を「白フチ付きステッカー」風にする（背景は HeroImage 側で透明化済み）。
+   多方向の drop-shadow でシルエットに白い縁取り＋足元にやわらかい影。 */
+.hero-cutout {
+  filter:
+    drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
+    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
+    drop-shadow(1px 1px 0 #fff) drop-shadow(-1px 1px 0 #fff)
+    drop-shadow(1px -1px 0 #fff) drop-shadow(-1px -1px 0 #fff)
+    drop-shadow(0 5px 6px rgba(0,0,0,.45));
 }
 .ta-hero.attack { animation: taHeroAtk .34s ease; }
 @keyframes taHeroAtk {

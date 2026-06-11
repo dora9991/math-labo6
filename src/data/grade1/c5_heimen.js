@@ -72,7 +72,7 @@ export const chapter = {
         ],
         advanced: [
           p("z3a1", (r) => { const r1 = r(2, 4), ro = r(5, 8); return { q: `半径${ro}cmの円から半径${r1}cmの円をくり抜いた面積は □π cm²。□は？`, ans: ro * ro - r1 * r1, h1: "□=R²−r²", h2: `${ro * ro}−${r1 * r1}=${ro * ro - r1 * r1}` }; }),
-          p("z3a2", (r) => { const rad = r(2, 6), n = r(3, 6); return { q: `半径${rad}cmの円を${n}等分したおうぎ形1つの面積は □π cm²。□は？`, ans: r2(rad * rad / n), h1: `□=r²÷${n}`, h2: `${rad * rad}÷${n}=${r2(rad * rad / n)}` }; }),
+          p("z3a2", (r) => { const pairs = [[6, 3], [6, 4], [6, 6], [4, 4], [3, 3], [5, 5], [9, 3]]; const [rad, n] = pairs[r(0, pairs.length - 1)]; const ans = rad * rad / n; return { q: `半径${rad}cmの円を${n}等分したおうぎ形1つの面積は □π cm²。□は？`, ans, h1: `□=r²÷${n}`, h2: `${rad * rad}÷${n}=${ans}` }; }),
         ],
       },
     },
@@ -90,7 +90,7 @@ export const chapter = {
           p("z4s1", (r) => { const rad = r(1, 3) * 3, ang = r(1, 4) * 60; const arc = 2 * rad * ang / 360; return { q: `半径${rad}cm・弧の長さ ${arc}π cm のおうぎ形の中心角は？`, ans: ang, h1: "中心角=弧÷(2r)×360", h2: `${arc}÷${2 * rad}×360=${ang}°` }; }),
         ],
         advanced: [
-          p("z4a1", (r) => { const rad = r(2, 6); const part = r(1, 5); const ang = part * 30; return { q: `半径${rad}cm・面積 ${r2(rad * rad * ang / 360)}π cm² のおうぎ形の中心角は？`, ans: ang, h1: "中心角=面積÷r²×360", h2: `${ang}°` }; }),
+          p("z4a1", (r) => { const tri = [[6, 30, 3], [6, 60, 6], [6, 90, 9], [6, 120, 12], [6, 150, 15], [4, 90, 4], [2, 90, 1], [3, 120, 3]]; const [rad, ang, area] = tri[r(0, tri.length - 1)]; return { q: `半径${rad}cm・面積 ${area}π cm² のおうぎ形の中心角は？`, ans: ang, h1: "中心角=面積÷r²×360", h2: `${area}÷${rad * rad}×360=${ang}°` }; }),
         ],
       },
     },

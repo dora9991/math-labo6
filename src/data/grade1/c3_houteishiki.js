@@ -47,10 +47,16 @@ export const chapter = {
         standard: [
           p("e2s1", (r) => { const x = r(2, 8), a = r(2, 3), b = r(1, 4); return { q: `(x+${b})/${a}=${(x + b) / a}　x=？`, ans: x, h1: `両辺に${a}をかける`, h2: `x+${b}=${x + b} → x=${x}`, skip: (x + b) % a !== 0 }; }),
           p("e2s2", (r) => { const x = r(2, 8), a = r(2, 4); return { q: `0.${a}x=${(0.1 * a * x).toFixed(1)}　x=？`, ans: x, h1: `両辺を10倍`, h2: `${a}x=${a * x} → x=${x}` }; }),
+          // バリエーション追加（同じ問題ばかりにならないよう小数・分数の標準を増やす）
+          p("e2s3", (r) => { const x = r(2, 6), a = r(2, 4); return { q: `x/${a}-${1}=${x / a - 1}　x=？`, ans: x, h1: `両辺に${a}をかける`, h2: `x-${a}=${x - a} → x=${x}`, skip: x % a !== 0 }; }),
+          p("e2s4", (r) => { const x = r(2, 8), a = r(2, 5); const c = (0.1 * a * x); return { q: `0.${a}x+1=${(c + 1).toFixed(1)}　x=？`, ans: x, h1: `1を移項→10倍`, h2: `${a}x=${a * x} → x=${x}` }; }),
+          p("e2s5", (r) => { const x = r(2, 6), a = r(2, 3); return { q: `(x-${1})/${a}=${(x - 1) / a}　x=？`, ans: x, h1: `両辺に${a}をかける`, h2: `x-1=${x - 1} → x=${x}`, skip: (x - 1) % a !== 0 }; }),
         ],
         advanced: [
           p("e2a1", () => { return { q: `x/2-x/3=1　x=？`, ans: 6, h1: "両辺×6", h2: "3x-2x=6 → x=6" }; }),
           p("e2a2", () => { return { q: `x/2=(x+2)/3　x=？`, ans: 4, h1: "両辺×6", h2: "3x=2x+4 → x=4" }; }),
+          p("e2a3", () => { return { q: `(x-1)/2=(x-4)/3　x=？`, ans: -5, h1: "両辺×6", h2: "3(x-1)=2(x-4) → 3x-3=2x-8 → x=-5" }; }),
+          p("e2a4", () => { return { q: `0.5x-1=0.2x+0.5　x=？`, ans: 5, h1: "両辺×10", h2: "5x-10=2x+5 → 3x=15 → x=5" }; }),
         ],
       },
     },
@@ -69,7 +75,7 @@ export const chapter = {
           p("e3s2", (r) => { const x = r(2, 6); return { q: `6x+3=2x+${4 * x + 3}　x=？`, ans: x, h1: "4x=…", h2: `4x=${4 * x} → x=${x}` }; }),
         ],
         advanced: [
-          p("e3a1", (r) => { const x = r(2, 6), a = r(2, 3), b = r(1, 4), c = r(2, 4), d = r(1, 4); const rhs = a * x + b; const cc = c, dd = rhs - c * x; return { q: `${a}x+${b}=${c}x+${dd}　x=？`, ans: x, h1: "移項して整理", h2: `x=${x}`, skip: a === c }; }),
+          p("e3a1", (r) => { const x = r(2, 6), a = r(2, 3), b = r(1, 4), c = r(2, 4); const rhs = a * x + b; const dd = rhs - c * x; const rhsStr = dd === 0 ? `${c}x` : dd > 0 ? `${c}x+${dd}` : `${c}x-${-dd}`; return { q: `${a}x+${b}=${rhsStr}　x=？`, ans: x, h1: "移項して整理", h2: `x=${x}`, skip: a === c }; }),
         ],
       },
     },

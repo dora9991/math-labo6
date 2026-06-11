@@ -11,6 +11,13 @@ function urlOf(slug) {
 }
 
 export const HERO_AVATARS = [
+  { id: "hero14", name: "いなずまの魔導士" },
+  { id: "hero15", name: "やみの魔狼騎士" },
+  { id: "hero16", name: "せいれいのエルフ" },
+  { id: "hero17", name: "ほのおの魔法剣士" },
+  { id: "hero18", name: "いなずまの戦士" },
+  { id: "hero19", name: "みなもの魔法少女" },
+  { id: "hero20", name: "古強者の魔導士" },
   { id: "hero09", name: "まほう学園の少女" },
   { id: "hero02", name: "ほのおの魔法少女" },
   { id: "hero13", name: "みずの魔法少女" },

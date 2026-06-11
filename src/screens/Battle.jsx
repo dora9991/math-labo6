@@ -579,11 +579,10 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
           {heroImageFor(player.avatar) && (
             <HeroImg
               src={heroImageFor(player.avatar)} alt="あなた"
-              className={hurt ? "bt-screen-shake" : ""}
+              className={"hero-cutout" + (hurt ? " bt-screen-shake" : "")}
               style={{
                 position: "absolute", left: 0, bottom: -8, height: 150, width: "auto",
                 maxWidth: "44%", objectFit: "contain", zIndex: 3, pointerEvents: "none",
-                filter: "drop-shadow(0 6px 8px rgba(0,0,0,.5))",
               }}
             />
           )}
