@@ -115,6 +115,17 @@ export function timeAttackCoins({ correct = 0, stars = 0 }) {
   return correct * 3 + stars * 10;
 }
 
+// タイムアタックでクリスタルがもらえる最低正答率（連打・あてずっぽう除けの基準）。
+export const TA_CRYSTAL_MIN_ACCURACY = 0.5;
+/** タイムアタック1回でもらえるクリスタル数（0 or 1）。
+ *  条件：星を1つ以上 かつ 正答率が TA_CRYSTAL_MIN_ACCURACY 以上
+ *  （適当な連打＝正答率が明らかに低い回はもらえない）。 */
+export function timeAttackCrystal({ correct = 0, wrong = 0, stars = 0 }) {
+  const total = correct + wrong;
+  const acc = total > 0 ? correct / total : 0;
+  return stars >= 1 && acc >= TA_CRYSTAL_MIN_ACCURACY ? 1 : 0;
+}
+
 /** 連続正解ボーナス：5連続以上の正解は1問ごとに+1、10連続以上は+2 上乗せ。
  *  oks は解いた順の正誤（true/false）の配列。 */
 export function timeAttackStreakBonus(oks = []) {

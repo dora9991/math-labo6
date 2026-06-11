@@ -76,7 +76,7 @@ export default function Skill({ player, onEquip, onPullSkill, onBack }) {
 
         <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", textAlign: "center", lineHeight: 1.6, marginTop: 4 }}>
           ※ スキルはバトル中、SPがたまると発動できます。<br />
-          新しいスキルは、上の<b style={{ color: "#67e8f9" }}>スキルガチャ</b>（クリスタル💎）で手に入ります（全{skillsForSlot(1).length + skillsForSlot(2).length}種）。クリスタルは章ボス・ラスボスを倒すと貯まります。
+          新しいスキルは、上の<b style={{ color: "#67e8f9" }}>スキルガチャ</b>（クリスタル💎）で手に入ります（全{skillsForSlot(1).length + skillsForSlot(2).length}種）。クリスタルは<b style={{ color: "#fde047" }}>タイムアタック（星1つ以上＆正答率50%以上で+1）</b>や、初めてのモンスター撃破（通常+5・ボス+10）で貯まります。
         </div>
       </div>
     </div>

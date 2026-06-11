@@ -9,7 +9,7 @@
 import { useState, useEffect, useRef } from "react";
 import * as store from "./store/localStore.js"; // ★将来ここを supabase.js に差し替える
 import { makeRecord, makeMistake } from "./store/recordSchema.js";
-import { levelFromXp, xpForLevel, playerLevel, playerXp } from "./engine/scoring.js";
+import { levelFromXp, xpForLevel, playerLevel, playerXp, timeAttackCrystal } from "./engine/scoring.js";
 import * as bgm from "./audio/bgm.js";
 import * as sfx from "./audio/sfx.js";
 
@@ -157,13 +157,16 @@ export default function App() {
     }
     const FIRST_CLEAR_COIN = 50, MASTER_BONUS_COIN = 200;
     const bonusCoin = (firstClear ? FIRST_CLEAR_COIN : 0) + (masteredNow ? MASTER_BONUS_COIN : 0); // 達成ベースのコイン
-    // 2) 星・くり返しXP履歴(playLog)・コインを更新
+    // クリスタル：星1つ以上＆正答率が一定以上なら毎回+1（連打・あてずっぽうは除外）
+    const crystalEarned = timeAttackCrystal({ correct, wrong, stars });
+    // 2) 星・くり返しXP履歴(playLog)・コイン・クリスタルを更新
     updatePlayer((p) => {
       const key = `${unit.id}-${level}`;
       const prevLog = (p.playLog && p.playLog[key]) || {};
       return {
         ...p,
         coins: (p.coins ?? 0) + coins + bonusCoin,
+        crystals: (p.crystals ?? 0) + crystalEarned,
         stars: { ...p.stars, [key]: Math.max(p.stars[key] || 0, stars) },
         playLog: { ...(p.playLog || {}), [key]: { cleared: prevLog.cleared || stars >= 1, lastDate: todayStr() } },
       };
@@ -574,9 +577,11 @@ export default function App() {
     if (win) addXp(gained);
     // 敗北：HP1（Battle側で保存済み）でメニュー画面へ戻る
     if (!win) { setBattleMonster(null); setScreen("home"); return; }
-    // 章ボス・ラスボスを初めてたおしたら、スキルガチャ用のクリスタルを入手
-    if (win && !alreadyCleared && (battleMonster.kind === "chapterBoss" || battleMonster.kind === "finalBoss")) {
-      const amount = battleMonster.kind === "finalBoss" ? 30 : 8; // ラスボス30・章ボス8
+    // モンスターを「初めて」たおしたら、スキルガチャ用のクリスタルを入手
+    //  通常モンスター=5個・ボス（章ボス/ラスボス）=10個。再戦（撃破済み）ではもらえない。
+    if (win && !alreadyCleared) {
+      const isBoss = battleMonster.kind === "chapterBoss" || battleMonster.kind === "finalBoss";
+      const amount = isBoss ? 10 : 5;
       updatePlayer((p) => ({ ...p, crystals: (p.crystals ?? 0) + amount }));
       setTimeout(() => setCrystalGet({ amount }), 1700); // 勝利演出のあとに入手演出
     }

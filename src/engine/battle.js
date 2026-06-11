@@ -200,8 +200,8 @@ export const SKILL_RARITY = {
 export const SKILL_RARITY_ORDER = ["n", "r", "sr", "ssr"];
 
 // スキルガチャの値段（クリスタル）。10連は1回ぶんお得。
-export const SKILL_GACHA_COST_1 = 50;
-export const SKILL_GACHA_COST_10 = 450;
+export const SKILL_GACHA_COST_1 = 10;
+export const SKILL_GACHA_COST_10 = 90;
 
 /** id からスキル定義を引く */
 export function findSkill(id) {

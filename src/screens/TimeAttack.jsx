@@ -10,7 +10,7 @@ import MathText from "../components/MathText.jsx";
 import * as bgm from "../audio/bgm.js";
 import * as sfx from "../audio/sfx.js";
 import { genProblem, makeChoices, isHardProblem } from "../engine/generator.js";
-import { calcStars, timeAttackXp, timeAttackCoins, timeAttackStreakBonus, isCorrect, parseAnswer, STAR_TARGET, XP_PER_CORRECT, XP_PENALTY_PER_WRONG, xpRepeatMultiplier } from "../engine/scoring.js";
+import { calcStars, timeAttackXp, timeAttackCoins, timeAttackCrystal, timeAttackStreakBonus, isCorrect, parseAnswer, STAR_TARGET, XP_PER_CORRECT, XP_PENALTY_PER_WRONG, xpRepeatMultiplier } from "../engine/scoring.js";
 
 // 選択肢・正誤判定のヘルパー
 //  問題が自前の choices を持つ＝式の4択問題 → 文字列で厳密一致（数値化しない）。
@@ -123,7 +123,8 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
     const mult = xpRepeatMultiplier(player.playLog, `${unit.id}-${level}`, todayStr());
     const xp = Math.round(baseXp * mult);
     const coins = timeAttackCoins({ correct, stars });
-    setSummary({ xp, baseXp, mult, penalty: wrong * XP_PENALTY_PER_WRONG, coins });
+    const crystal = timeAttackCrystal({ correct, wrong, stars });
+    setSummary({ xp, baseXp, mult, penalty: wrong * XP_PENALTY_PER_WRONG, coins, crystal });
     onComplete({ chapter, unit, level, correct, wrong, stars, maxStreak, xp, coins, results });
   }, [phase]); // eslint-disable-line
 
@@ -180,6 +181,16 @@ export default function TimeAttack({ player, chapter, unit, level, onComplete, o
                     <span className="xp-pill" style={{ marginLeft: 6, background: "linear-gradient(135deg,#f59e0b,#fbbf24)", color: "#3a2a00" }}>
                       💰 +{summary.coins} コイン
                     </span>
+                  )}
+                  {summary.crystal > 0 && (
+                    <span className="xp-pill" style={{ marginLeft: 6, background: "linear-gradient(135deg,#22d3ee,#67e8f9)", color: "#063b44" }}>
+                      💎 +{summary.crystal} クリスタル
+                    </span>
+                  )}
+                  {!weak && summary.crystal === 0 && (
+                    <div style={{ fontSize: 11, color: "#0e7490", fontWeight: 700, marginTop: 5 }}>
+                      💎 クリスタルは「星1つ以上 ＆ 正答率50%以上」でもらえます
+                    </div>
                   )}
                   {summary.mult < 1 && (
                     <div style={{ fontSize: 11, color: "#92400e", fontWeight: 700, marginTop: 5 }}>

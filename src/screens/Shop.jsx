@@ -156,7 +156,7 @@ export default function Shop({ player, onBuy, onDiscard, onHeal, onPullGacha, on
           <div style={{ fontSize: 12, fontWeight: 900, color: "#fff", marginBottom: 4 }}>✨ スキルについて</div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,.55)", lineHeight: 1.6 }}>
             スキルは<b style={{ color: "#67e8f9" }}>「スキル」画面のスキルガチャ</b>（クリスタル💎）で手に入ります。
-            クリスタルは<b style={{ color: "#fde047" }}>章ボス・ラスボスを倒す</b>と貯まります。
+            クリスタルは<b style={{ color: "#fde047" }}>タイムアタック（星1つ以上＆正答率50%以上）</b>や、初めてのモンスター撃破で貯まります。
           </div>
         </div>
 
