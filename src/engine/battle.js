@@ -44,6 +44,7 @@ export function getPlayerBattleStats(lv, bonuses = {}) {
 export const CALC_KING_CLEAR_STREAK = 5;     // 5問連続正解＝その章の計算王クリア
 export const CALC_KING_ATK_PER_UNIT = 0.05;  // 1章クリアごとに攻撃力 +5%
 export const CALC_KING_ATK_CAP = 0.6;        // 攻撃力ボーナスの上限 +60%
+export const CALC_KING_CLEAR_CRYSTAL = 3;    // 章を初めて計算王クリアした時の専用報酬（クリスタル）
 
 /** その章が計算王クリア済みか（5問連続正解の自己ベストがあるか） */
 export function isCalcKingCleared(player, chapterId) {

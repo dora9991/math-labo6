@@ -3,7 +3,7 @@
 //
 //  押すと「自分が間違えた問題の一覧」が単元ごとに出る。
 //  各単元で：
-//    ✏️ 学び直し … その単元を時間制限なしで練習（1問10XP・学習のコア）
+//    ✏️ 学び直し … その単元を時間制限なしで練習（1問15XP＝1.5倍・15問ごとに💎+1・学習のコア）
 //    📺 解説     … 葉一さん（19ch）の解説動画ページへ
 //  各問題で：✓ できた … その問題をノートから消す
 //
@@ -30,7 +30,7 @@ export default function Relearn({ player, mistakes = [], onRelearn, onRemove, on
       <Header player={player} back="ホーム" onBack={onBack} />
       <div className="content">
         <div className="pg-ttl">📖 学び直しモード</div>
-        <div className="pg-sub">間違えた問題を、動画で学び直して、もう一度といてみよう（1問 +10XP）</div>
+        <div className="pg-sub">間違えた問題を、動画で学び直して、もう一度といてみよう（1問 +15XP・15問ごとに💎+1）</div>
 
         {mistakes.length === 0 ? (
           <div className="glass">

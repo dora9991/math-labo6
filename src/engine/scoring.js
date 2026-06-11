@@ -110,6 +110,12 @@ export const XP_PER_CORRECT = 5;
 // 間違い1問あたりの減点。連打・あてずっぽうを軽く抑止する程度に。
 export const XP_PENALTY_PER_WRONG = 3;
 
+// ── 学び直しの報酬（学習のコア）─────────────────────
+// 1問の正解XPは通常じっくり(10)の1.5倍＝15。さらに RELEARN_CRYSTAL_EVERY 問
+// 解くごとにクリスタルを+1（コツコツ取り組むほどスキルガチャ資金がたまる）。
+export const RELEARN_XP_PER_CORRECT = 15;
+export const RELEARN_CRYSTAL_EVERY = 15;
+
 /** タイムアタック1回で稼げるコイン（正解1問=3コイン＋星ボーナス）
  *  アイテム購入の元手。XPと違ってくり返しでも減らさない（コツコツ稼げる）。 */
 export function timeAttackCoins({ correct = 0, stars = 0 }) {

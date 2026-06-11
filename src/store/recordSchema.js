@@ -91,6 +91,7 @@ export function initialPlayerState(studentId) {
     currentHp: null,   // バトル間で持ち越す現在HP（null=満タン。0以下にはせず、ショップの治療で全回復）
     coins: 0,          // 所持コイン（タイムアタックで稼ぎ、ショップでアイテム購入に使う）
     crystals: 0,       // 所持クリスタル（レアコイン。ボス撃破などで貯まり、スキルガチャに使う）
+    relearnSolved: 0,  // 学び直しで解いた問題の累計（一定数ごとにクリスタル+1の判定に使う）
     item: null,        // 所持アイテム（id 文字列。1つだけ持てる。バトルで使うと消費）
     gacha: { owned: {}, weapon: null, armor: null }, // ガチャ装備：owned={id:個数}, 装備中の武器/防具id
     skillOwned: {},    // スキルガチャの所持数 { skillId: 個数 }（被りカウント。装備可否は ownedSkills を見る）
@@ -139,8 +140,24 @@ export function normalizePlayerState(p) {
   out.seenMonsters = p.seenMonsters || {};
   out.unitMastery = p.unitMastery || {};
   out.crystals = Number.isFinite(p.crystals) ? p.crystals : 0;
+  out.relearnSolved = Number.isFinite(p.relearnSolved) ? p.relearnSolved : 0;
   out.skillOwned = (p.skillOwned && typeof p.skillOwned === "object") ? p.skillOwned : {};
   out.ownedSkills = Array.isArray(p.ownedSkills) && p.ownedSkills.length ? p.ownedSkills : [...base.ownedSkills];
+  // ── ヒーロー所持／初期キャラの補完 ──
+  //  重複整理で削除した立ち絵(hero14〜20)を選んでいた場合は、等価キャラへ付け替える。
+  const HERO_REMAP = {
+    hero14: "hero06", hero15: "hero07", hero16: "hero04", hero17: "hero02",
+    hero18: "hero06", hero19: "hero03", hero20: "hero12",
+  };
+  let av = p.avatar || { type: "hero", id: "hero10" };
+  if (av && av.type === "hero" && HERO_REMAP[av.id]) av = { type: "hero", id: HERO_REMAP[av.id] };
+  out.avatar = av;
+  //  旧セーブに ownedHeroes が無ければ、STARTER ＋ 今選んでいるヒーローを所持扱いにする
+  //  （課金前から使っていた子の立ち絵が消えないように）。
+  const ownH = (Array.isArray(p.ownedHeroes) ? p.ownedHeroes : []).map((id) => HERO_REMAP[id] || id);
+  if (!ownH.includes("hero10")) ownH.push("hero10");
+  if (av.type === "hero" && !ownH.includes(av.id)) ownH.push(av.id);
+  out.ownedHeroes = [...new Set(ownH)];
   out.equip = { ...base.equip, ...(p.equip || {}) };
   // 装備中スキルが未所持なら基本スキルへフォールバック
   if (!out.ownedSkills.includes(out.equip[1])) out.equip[1] = base.equip[1];

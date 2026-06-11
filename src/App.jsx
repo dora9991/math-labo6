@@ -9,7 +9,7 @@
 import { useState, useEffect, useRef } from "react";
 import * as store from "./store/localStore.js"; // ★将来ここを supabase.js に差し替える
 import { makeRecord, makeMistake } from "./store/recordSchema.js";
-import { levelFromXp, xpForLevel, playerLevel, playerXp, timeAttackCrystal } from "./engine/scoring.js";
+import { levelFromXp, xpForLevel, playerLevel, playerXp, timeAttackCrystal, RELEARN_XP_PER_CORRECT, RELEARN_CRYSTAL_EVERY } from "./engine/scoring.js";
 import * as bgm from "./audio/bgm.js";
 import * as sfx from "./audio/sfx.js";
 
@@ -39,11 +39,12 @@ import Skill from "./screens/Skill.jsx";
 import StatusDetail from "./screens/StatusDetail.jsx";
 import Admin from "./screens/Admin.jsx";
 import Character from "./screens/Character.jsx";
+import { HERO_PRICE } from "./data/heroes.js";
 import HowTo from "./screens/HowTo.jsx";
 import Clinic from "./screens/Clinic.jsx";
 import Collection from "./screens/Collection.jsx";
 import { findItem, treatCost } from "./engine/items.js";
-import { getPlayerBattleStats, BATTLE_SKILLS, battleBonuses, isCalcKingCleared, CALC_KING_CLEAR_STREAK, findSkill, rollSkillGacha, rollSkillGachaMulti, SKILL_RARITY, SKILL_GACHA_COST_1, SKILL_GACHA_MULTI_COST, SKILL_GACHA_MULTI_N } from "./engine/battle.js";
+import { getPlayerBattleStats, BATTLE_SKILLS, battleBonuses, isCalcKingCleared, CALC_KING_CLEAR_STREAK, CALC_KING_CLEAR_CRYSTAL, findSkill, rollSkillGacha, rollSkillGachaMulti, SKILL_RARITY, SKILL_GACHA_COST_1, SKILL_GACHA_MULTI_COST, SKILL_GACHA_MULTI_N } from "./engine/battle.js";
 import { MONSTERS } from "./data/monsters.js";
 import { foldSequence } from "./engine/unitMastery.js";
 import { isUnitMonsterUnlocked } from "./engine/unlock.js";
@@ -294,7 +295,7 @@ export default function App() {
   //  - スキル習熟度(skillStats)を更新（mNew は画面側のEloで算出済み）
   //  - 間違いはスキル付きでノートへ
   //  - XPはささやか＆ペナルティなし（自己肯定を下げない）
-  function recordStepAttempt({ skill, unitId, level, templateId, ok, q, ans, mNew }) {
+  function recordStepAttempt({ skill, unitId, level, templateId, ok, q, ans, mNew, relearn = false }) {
     const sid = data.player.studentId;
     // スキルタグがある中1のみ習熟度(Elo)を更新（中2・中3の固定問題は skill=null）
     if (skill) {
@@ -314,7 +315,20 @@ export default function App() {
       ]);
       setData((d) => ({ ...d, mistakes: newMistakes }));
     }
-    addXp(ok ? 10 : 0); // ステップアップは1問10XP（じっくり取り組む価値を高く）
+    // 学び直しは「学習のコア」：XP1.5倍（1問15）＋一定問数ごとにクリスタル+1。
+    if (relearn) {
+      const solved = (data.player.relearnSolved || 0) + 1;
+      const crystalUp = solved % RELEARN_CRYSTAL_EVERY === 0 ? 1 : 0;
+      updatePlayer((p) => ({
+        ...p,
+        relearnSolved: (p.relearnSolved || 0) + 1,
+        crystals: (p.crystals ?? 0) + crystalUp,
+      }));
+      if (crystalUp) setTimeout(() => setCrystalGet({ amount: crystalUp }), 500);
+      addXp(ok ? RELEARN_XP_PER_CORRECT : 0);
+    } else {
+      addXp(ok ? 10 : 0); // ステップアップ／じっくりは1問10XP
+    }
   }
 
   // チャレンジ：難問を初クリアしたとき（段位の元を保存＋難易度比例XP）
@@ -355,6 +369,8 @@ export default function App() {
             bestTime5: (time5 != null && (ck.bestTime5 == null || time5 < ck.bestTime5)) ? time5 : ck.bestTime5,
           },
         },
+        // 章を初めて計算王クリアした時の専用報酬（クリスタル+3）
+        ...(justCleared ? { crystals: (p.crystals ?? 0) + CALC_KING_CLEAR_CRYSTAL } : {}),
       };
     });
     const xp = Math.min(streak * 4, 120) + (newBestStreak ? 40 : 0); // 控えめ＋新記録ボーナス
@@ -364,7 +380,10 @@ export default function App() {
     }));
     setData((d) => ({ ...d, records: store.load().records }));
     addXp(xp);
-    if (justCleared) setTimeout(() => setCalcKingClear({ unitId }), 600); // クリア演出
+    if (justCleared) {
+      setTimeout(() => setCalcKingClear({ unitId }), 600); // 攻撃力アップのクリア演出
+      setTimeout(() => setCrystalGet({ amount: CALC_KING_CLEAR_CRYSTAL }), 1400); // 専用報酬のクリスタル入手演出
+    }
   }
 
   // ショップ：アイテム購入（コイン消費・1つだけ所持＝持ち替え）
@@ -551,6 +570,18 @@ export default function App() {
   // キャラクター画面：自分のキャラ／名前を設定
   function setAvatar(avatar) { updatePlayer((p) => ({ ...p, avatar })); }
   function setName(name) { updatePlayer((p) => ({ ...p, name: (name || "").slice(0, 10) })); }
+  // ヒーローを💰HERO_PRICEで購入して解放（そのまま装備する）。成功で true。
+  function buyHero(id) {
+    let ok = false;
+    updatePlayer((p) => {
+      const owned = p.ownedHeroes || [];
+      if (owned.includes(id)) { ok = true; return { ...p, avatar: { type: "hero", id } }; } // 所持済みは装備のみ
+      if ((p.coins ?? 0) < HERO_PRICE) return p; // コイン不足
+      ok = true;
+      return { ...p, coins: (p.coins ?? 0) - HERO_PRICE, ownedHeroes: [...owned, id], avatar: { type: "hero", id } };
+    });
+    return ok;
+  }
 
   // スキル画面：スロット(1|2)に装備するスキルを変える
   function setEquip(slot, skillId) {
@@ -691,7 +722,7 @@ export default function App() {
 
   // キャラクター設定
   if (screen === "character") {
-    return <Character player={data.player} onSetAvatar={setAvatar} onSetName={setName} onBack={() => setScreen("home")} />;
+    return <Character player={data.player} onSetAvatar={setAvatar} onSetName={setName} onBuyHero={buyHero} onBack={() => setScreen("home")} />;
   }
 
   // 困り感クリニック（試作：1スキル）
@@ -789,7 +820,7 @@ export default function App() {
     );
   }
 
-  // 学び直しの練習（時間制限なし・1問10XP・StepUpSimpleを流用）
+  // 学び直しの練習（時間制限なし・1問15XP＝1.5倍・15問ごとに💎+1・StepUpSimpleを流用）
   if (screen === "relearnPractice" && practiceUnit) {
     return (
       <StepUpSimple
@@ -798,7 +829,7 @@ export default function App() {
         units={[practiceUnit]}
         title={`学び直し：${practiceUnit.name}`}
         roundSize={5}
-        onAttempt={recordStepAttempt}
+        onAttempt={(a) => recordStepAttempt({ ...a, relearn: true })}
         onHome={() => setScreen("relearn")}
       />
     );
