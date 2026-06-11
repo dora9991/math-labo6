@@ -996,7 +996,7 @@ export default function App() {
       onChallenge={() => setScreen("calcKingPick")}
       onBattle={() => setScreen("battle")}
       onRelearn={() => setScreen("relearn")}
-      onClinic={() => setScreen("clinic")}
+      onClinic={null /* 困り感クリニックは当面非表示。() => setScreen("clinic") に戻せば復活（機能コード・ルーティング・saveClinicResult は保持） */}
       onStartGolden={startGolden}
       onShop={() => setScreen("shop")}
       onSkill={() => setScreen("skill")}
