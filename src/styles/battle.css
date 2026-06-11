@@ -389,3 +389,97 @@
   0%, 13% { } 15% { transform: translateX(-7px); } 17% { transform: translateX(7px); }
   19% { transform: translateX(-5px); } 21% { transform: translateX(0); }
 }
+
+/* ============================================================
+   タイムアタック＝連戦バトル（ガントレット）の見た目
+   既存の correct-ring / mon-dmg-num / bt-particles を流用しつつ、
+   応援キャラ・吹き出し・敵HP・フィーバーをここで足す。
+   ============================================================ */
+.ta-stage {
+  position: relative;
+  height: 188px;
+  margin: 4px 0 10px;
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,.18), transparent 60%),
+    linear-gradient(180deg, rgba(15,23,42,.55), rgba(15,23,42,.78));
+  border: 1px solid rgba(148,163,184,.18);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.ta-stage.fever {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(251,191,36,.30), transparent 60%),
+    linear-gradient(180deg, rgba(76,29,29,.55), rgba(30,10,10,.82));
+  border-color: rgba(251,191,36,.45);
+  animation: taFeverPulse .8s ease-in-out infinite;
+}
+@keyframes taFeverPulse {
+  0%,100% { box-shadow: inset 0 0 0 0 rgba(251,191,36,0); }
+  50% { box-shadow: inset 0 0 26px 0 rgba(251,191,36,.35); }
+}
+/* 敵の名前＋HP（ステージ上部に小さく） */
+.ta-enemy-bar {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  width: 78%; max-width: 340px; text-align: center; z-index: 4; pointer-events: none;
+}
+.ta-enemy-name { font-size: 12px; font-weight: 900; letter-spacing: .02em; }
+.ta-hp-track {
+  margin-top: 3px; height: 9px; border-radius: 999px; overflow: hidden;
+  background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.12);
+}
+.ta-hp-fill { height: 100%; border-radius: 999px; transition: width .18s ease; }
+/* 自分のキャラ（左下）＋攻撃の前のめり */
+.ta-hero {
+  position: absolute; left: 6px; bottom: -6px; height: 118px; width: auto;
+  max-width: 42%; object-fit: contain; z-index: 3; pointer-events: none;
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,.5));
+  transform-origin: center bottom;
+}
+.ta-hero.attack { animation: taHeroAtk .34s ease; }
+@keyframes taHeroAtk {
+  0% { transform: translateX(0) scale(1); }
+  40% { transform: translateX(14px) scale(1.06); }
+  100% { transform: translateX(0) scale(1); }
+}
+/* 応援の吹き出し（キャラの上にポンと出る） */
+.ta-cheer {
+  position: absolute; left: 8px; bottom: 116px; z-index: 6; pointer-events: none;
+  max-width: 60%; padding: 6px 11px; border-radius: 14px 14px 14px 4px;
+  background: #fff; color: #1e293b; font-size: 13px; font-weight: 900;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35); animation: taCheerPop .5s ease;
+}
+.ta-cheer.fever { background: linear-gradient(135deg,#fde047,#fbbf24); color: #4a2c00; }
+@keyframes taCheerPop {
+  0% { transform: translateY(8px) scale(.6); opacity: 0; }
+  45% { transform: translateY(0) scale(1.08); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+/* 撃破の「○体！」ポップ */
+.ta-kill-pop {
+  position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%);
+  z-index: 7; pointer-events: none; font-size: 30px; font-weight: 900;
+  color: #fde047; text-shadow: 0 2px 0 #b45309, 0 0 18px rgba(251,191,36,.7);
+  animation: taKillPop .8s ease forwards;
+}
+@keyframes taKillPop {
+  0% { transform: translate(-50%,-50%) scale(.4) rotate(-8deg); opacity: 0; }
+  30% { transform: translate(-50%,-58%) scale(1.15) rotate(2deg); opacity: 1; }
+  100% { transform: translate(-50%,-78%) scale(1) rotate(0); opacity: 0; }
+}
+/* フィーバー帯 */
+.ta-fever-banner {
+  position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%);
+  z-index: 7; text-align: center; pointer-events: none;
+  font-size: 26px; font-weight: 900; color: #fff;
+  text-shadow: 0 2px 0 #b45309, 0 0 20px rgba(251,191,36,.9);
+  animation: taKillPop 1.1s ease forwards;
+}
+/* 結果画面：倒したモンスターを並べる */
+.ta-kill-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 6px 0 2px; }
+.ta-kill-chip {
+  width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+  background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25);
+  display: flex; align-items: center; justify-content: center;
+}
+.ta-kill-chip img { width: 36px; height: 36px; object-fit: contain; }

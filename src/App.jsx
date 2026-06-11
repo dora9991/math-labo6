@@ -139,7 +139,7 @@ export default function App() {
   }
 
   // タイムアタック1回の結果を保存
-  function saveTimeAttackResult({ chapter, unit, level, correct, wrong, stars, maxStreak, xp, coins = 0, results }) {
+  function saveTimeAttackResult({ chapter, unit, level, correct, wrong, stars, maxStreak, xp, coins = 0, results, dailyBonus = 0 }) {
     const sid = data.player.studentId;
     // 1) 記録を追加
     store.addRecord(makeRecord({
@@ -170,6 +170,8 @@ export default function App() {
         crystals: (p.crystals ?? 0) + crystalEarned,
         stars: { ...p.stars, [key]: Math.max(p.stars[key] || 0, stars) },
         playLog: { ...(p.playLog || {}), [key]: { cleared: prevLog.cleared || stars >= 1, lastDate: todayStr() } },
+        // 1日1回ボーナスを得た日を記録（xp に既に加算済み。日付だけスタンプ）
+        ...(dailyBonus > 0 ? { lastDailyBonusDate: todayStr() } : {}),
       };
     });
     // 3) 間違いを間違いノートへ

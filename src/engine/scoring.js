@@ -180,11 +180,13 @@ export function isCorrect(userAnswer, ans) {
 
 // 同じ問題（単元×難易度ごと）をくり返したときのXP倍率
 //  初クリアまで : ×1（満点）
-//  同じ日にくり返す : ×1/2
-//  クリア済みを別の日に再挑戦 : ×1/5
+//  同じ日にくり返す : ×0.6
+//  クリア済みを別の日に再挑戦 : ×1/3
 // ※ key は `${unitId}-${level}` なので、かんたん/ふつう/発展は別問題として扱う
+// ※「上がりにくい」体感の正体は周回時のこの減衰。あてずっぽう抑止は残しつつ
+//   「繰り返してもバーが少し進む」感が出るよう、⅕→⅓・½→0.6 にゆるめている。
 export function xpRepeatMultiplier(playLog, key, today) {
   const e = playLog && playLog[key];
   if (!e || !e.cleared) return 1;
-  return e.lastDate === today ? 0.5 : 0.2;
+  return e.lastDate === today ? 0.6 : 1 / 3;
 }

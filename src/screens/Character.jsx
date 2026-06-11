@@ -9,6 +9,8 @@ import { useRef, useEffect, useState } from "react";
 import Header from "../components/Header.jsx";
 import Avatar from "../components/Avatar.jsx";
 import { AVATAR_TEMPLATES } from "../data/avatars.js";
+import { HERO_AVATARS } from "../data/heroes.js";
+import HeroImg from "../components/HeroImg.jsx";
 
 const OUT_SIZE = 240; // 保存する画像の一辺（px）。小さくしてlocalStorageを軽く保つ
 
@@ -32,7 +34,7 @@ function squashImage(src, cb) {
 const PEN_COLORS = ["#1e1b4b", "#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#000000"];
 
 export default function Character({ player, onSetAvatar, onSetName, onBack }) {
-  const [tab, setTab] = useState("template"); // template | draw | upload
+  const [tab, setTab] = useState("hero"); // hero | template | draw | upload
   const [nameInput, setNameInput] = useState(player.name || "");
   const [color, setColor] = useState(PEN_COLORS[0]);
   const [preview, setPreview] = useState(null); // 取り込み中のプレビュー（dataURL）
@@ -146,11 +148,38 @@ export default function Character({ player, onSetAvatar, onSetName, onBack }) {
         </div>
 
         {/* タブ */}
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {tabBtn("hero", "🦸 ヒーロー")}
           {tabBtn("template", "テンプレ")}
           {tabBtn("draw", "✏️ 手書き")}
           {tabBtn("upload", "🖼️ 画像")}
         </div>
+
+        {/* ヒーロー（立ち絵） */}
+        {tab === "hero" && (
+          <div className="glass" style={{ padding: "14px 16px" }}>
+            <div className="slbl">冒険者を選ぼう（ホームやバトルに登場するよ）</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+              {HERO_AVATARS.map((h) => {
+                const selected = player.avatar?.type === "hero" && player.avatar.id === h.id;
+                return (
+                  <button key={h.id} data-sfx="none" onClick={() => onSetAvatar({ type: "hero", id: h.id })}
+                    style={{
+                      cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                      padding: 6, borderRadius: 12, fontFamily: "inherit",
+                      background: selected ? "rgba(253,224,71,.12)" : "rgba(255,255,255,.04)",
+                      border: `2px solid ${selected ? "#fde047" : "rgba(255,255,255,.1)"}`,
+                    }}>
+                    <div style={{ height: 96, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                      <HeroImg src={h.src} alt={h.name} style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+                    </div>
+                    <span style={{ fontSize: 9.5, color: selected ? "#fde047" : "rgba(255,255,255,.6)", fontWeight: 800, textAlign: "center", lineHeight: 1.2 }}>{h.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* テンプレ */}
         {tab === "template" && (

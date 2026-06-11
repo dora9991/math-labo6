@@ -7,6 +7,8 @@
 import { useState, useEffect, useRef } from "react";
 import MonsterSprite from "../components/MonsterSprite.jsx";
 import Avatar from "../components/Avatar.jsx";
+import HeroImg from "../components/HeroImg.jsx";
+import { heroImageFor } from "../data/heroes.js";
 import { BigWord, StarField } from "../components/Decorations.jsx";
 import MathText from "../components/MathText.jsx";
 import * as bgm from "../audio/bgm.js";
@@ -573,6 +575,18 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
             </div>
           )}
           {showRing && <><div className="correct-ring show" /><div className="correct-flash show" /></>}
+          {/* 自分のキャラ（立ち絵）：左下に登場。被ダメで揺れる */}
+          {heroImageFor(player.avatar) && (
+            <HeroImg
+              src={heroImageFor(player.avatar)} alt="あなた"
+              className={hurt ? "bt-screen-shake" : ""}
+              style={{
+                position: "absolute", left: 0, bottom: -8, height: 150, width: "auto",
+                maxWidth: "44%", objectFit: "contain", zIndex: 3, pointerEvents: "none",
+                filter: "drop-shadow(0 6px 8px rgba(0,0,0,.5))",
+              }}
+            />
+          )}
           <MonsterSprite monster={monster} state={monState} animKey={animKey} />
           {deadParticles.length > 0 && (
             <div className="bt-particles">
@@ -586,6 +600,16 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
               ))}
             </div>
           )}
+        </div>
+
+        {/* プレイヤー（自分のHP）：ステージ直下に配置 */}
+        <div className="bt-panel bt-player">
+          <Avatar avatar={player.avatar} size={30} />
+          <span className="bt-player-name">{player.name ? player.name : "あなた"}（Lv.{lv}）</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#7fff7f", fontSize: 12 }}>
+            HP {Math.max(0, playerHp)}/{stats.maxHp}
+            <div className="bt-hp-track" style={{ width: 110 }}><div className="bt-hp-fill" style={{ width: plHpPct + "%", background: hpColor(plHpPct) }} /></div>
+          </div>
         </div>
 
         {/* タイマー＋コンボ */}
@@ -684,16 +708,6 @@ export default function Battle({ player, monster, onResult, onSpChange, onItemUs
 
         {/* バトルログ */}
         <div className="bt-panel bt-log"><span className="new">{log}</span></div>
-
-        {/* プレイヤー */}
-        <div className="bt-panel bt-player">
-          <Avatar avatar={player.avatar} size={30} />
-          <span className="bt-player-name">{player.name ? player.name : "あなた"}（Lv.{lv}）</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#7fff7f", fontSize: 12 }}>
-            HP {Math.max(0, playerHp)}/{stats.maxHp}
-            <div className="bt-hp-track" style={{ width: 110 }}><div className="bt-hp-fill" style={{ width: plHpPct + "%", background: hpColor(plHpPct) }} /></div>
-          </div>
-        </div>
 
         <button className="back-btn" style={{ alignSelf: "center" }} onClick={() => { if (!endedRef.current) saveHp(playerHpRef.current); onExit(); }}>← にげる</button>
       </div>

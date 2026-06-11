@@ -8,6 +8,8 @@
 import { chaptersForGrade, LEVEL_KEYS } from "../data/index.js";
 import { levelProgress, levelTitle, levelColor, playerLevel, playerXp } from "../engine/scoring.js";
 import { getPlayerBattleStats, getEquippedSkills, SP_MAX, battleBonuses } from "../engine/battle.js";
+import { heroImageFor } from "../data/heroes.js";
+import HeroImg from "./HeroImg.jsx";
 
 // 記録(records)を createdAt で日ごとにまとめ、解答数・正解数を集計する。
 // 解答のある日だけを新しい順に並べ、先頭 maxDays 日ぶんを返す。
@@ -138,11 +140,25 @@ export default function Dashboard({ player, records = [], onDetail, grade = 1 })
           <div style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,.45)", marginBottom: 7 }}>
             ⚔️ バトルステータス
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Stat label="現在のHP" value={`❤️ ${player.currentHp == null ? battle.maxHp : Math.max(0, Math.min(battle.maxHp, player.currentHp))}/${battle.maxHp}`} color="#f87171" />
-            <Stat label="こうげき力" value={`⚔️ ${battle.atk}`} color="#fbbf24" />
+          <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+            {heroImageFor(player.avatar) && (
+              <div style={{
+                width: 96, flexShrink: 0, borderRadius: 12, overflow: "hidden",
+                background: "linear-gradient(160deg,rgba(14,165,233,.18),rgba(30,58,138,.28))",
+                border: "1px solid rgba(103,232,249,.25)", display: "flex", alignItems: "flex-end", justifyContent: "center",
+              }}>
+                <HeroImg src={heroImageFor(player.avatar)} alt="マイキャラ"
+                  style={{ width: "100%", height: "auto", objectFit: "contain", display: "block" }} />
+              </div>
+            )}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Stat label="現在のHP" value={`❤️ ${player.currentHp == null ? battle.maxHp : Math.max(0, Math.min(battle.maxHp, player.currentHp))}/${battle.maxHp}`} color="#f87171" />
+                <Stat label="こうげき力" value={`⚔️ ${battle.atk}`} color="#fbbf24" />
+              </div>
+              <SpGauge sp={sp} skills={getEquippedSkills(player)} />
+            </div>
           </div>
-          <SpGauge sp={sp} skills={getEquippedSkills(player)} />
         </div>
       </div>
 
