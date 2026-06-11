@@ -53,10 +53,13 @@ export default function Transfer({ player, onImportFile, onSkip }) {
             <div style={{ fontSize: 44 }}>📦➡️🎮</div>
             <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginTop: 4 }}>前のアプリから引き継ぐ</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,.75)", marginTop: 10, lineHeight: 1.8, textAlign: "left" }}>
-              前のアプリ(数学ラボ v4)で遊んでいた人は、<b style={{ color: "#fde047" }}>レベル・コイン・星・装備</b>などを引き継げます。
+              前のアプリ（<b style={{ color: "#fff" }}>数学ラボ5</b>など）で遊んでいた人は、<b style={{ color: "#fde047" }}>レベル・コイン・星・キャラ・装備</b>などを引き継げます。
+              <div style={{ marginTop: 10, background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.4)", borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "rgba(255,255,255,.85)" }}>
+                ✅ <b style={{ color: "#4ade80" }}>同じ端末・同じブラウザ</b>で数学ラボ5を遊んでいた人は、<b style={{ color: "#fff" }}>もう自動で引き継がれています</b>。下の「✨ 新しくはじめる」を押してそのまま続けてOK！
+              </div>
               <div style={{ marginTop: 10, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: "10px 12px", fontSize: 12.5 }}>
-                <b style={{ color: "#fff" }}>引き継ぎ方</b><br />
-                ① 前のアプリを開く<br />
+                <b style={{ color: "#fff" }}>別の端末から引き継ぐ方法</b><br />
+                ① 前のアプリ（数学ラボ5）を開く<br />
                 ② 「📖 遊び方」→「💾 保存する」でファイルを作る<br />
                 ③ 下のボタンで、そのファイルを選ぶ
               </div>
