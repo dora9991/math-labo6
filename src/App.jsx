@@ -6,7 +6,7 @@
 // ゲームのルールは engine/ に、問題は data/ に、保存は store/ にあるので、
 // このファイルは「つなぐだけ」。
 // ============================================================
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import * as store from "./store/localStore.js"; // ★将来ここを supabase.js に差し替える
 import { makeRecord, makeMistake } from "./store/recordSchema.js";
 import { levelFromXp, xpForLevel, playerLevel, playerXp, timeAttackCrystal, RELEARN_XP_PER_CORRECT, RELEARN_CRYSTAL_EVERY } from "./engine/scoring.js";
@@ -40,6 +40,8 @@ import StatusDetail from "./screens/StatusDetail.jsx";
 import Admin from "./screens/Admin.jsx";
 import Character from "./screens/Character.jsx";
 import { HERO_PRICE } from "./data/heroes.js";
+const Lesson = lazy(() => import("./screens/Lesson.jsx")); // pdf.jsが重いので開いた時だけ読み込む
+import { lessonMediaFor } from "./data/lessonMedia.js";
 import HowTo from "./screens/HowTo.jsx";
 import Clinic from "./screens/Clinic.jsx";
 import Collection from "./screens/Collection.jsx";
@@ -77,6 +79,7 @@ export default function App() {
   const [battleMonster, setBattleMonster] = useState(null); // 選択中のモンスター
   const [battleKey, setBattleKey] = useState(0); // 「もう一度」で戦闘をやり直す用
   const [utChapter, setUtChapter] = useState(null); // 単元テストの対象章
+  const [lessonUnit, setLessonUnit] = useState(null); // 「動画＋ワークシート」レッスンの対象単元
   const [levelUpTo, setLevelUpTo] = useState(null); // レベルアップ演出（上がった先のレベル）
   const [loginBonus, setLoginBonus] = useState(null); // ログインボーナス演出 { reward, streak, isFifth }
   const loginCheckedRef = useRef(false);              // 今セッションでログイン判定済みか
@@ -743,8 +746,22 @@ export default function App() {
           setSel({ chapter, unit, level });
           setScreen(mode); // "timeAttack" など
         }}
+        onLesson={(unit) => { setLessonUnit(unit); setScreen("lesson"); }}
         onBack={() => setScreen("home")}
       />
+    );
+  }
+
+  if (screen === "lesson" && lessonUnit) {
+    return (
+      <Suspense fallback={<div className="app"><div className="content"><div className="glass" style={{ padding: 20, textAlign: "center" }}>読み込み中…</div></div></div>}>
+        <Lesson
+          player={data.player}
+          unit={lessonUnit}
+          media={lessonMediaFor(lessonUnit.id)}
+          onBack={() => setScreen("chapter")}
+        />
+      </Suspense>
     );
   }
 
