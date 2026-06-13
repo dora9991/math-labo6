@@ -11,6 +11,16 @@ import { videoUrlFor } from "./videoLinks.js";
 
 const MEDIA = {
   u1: { youtubeId: "", pdf: "u1.pdf" }, // ← youtubeId に動画IDを入れると埋め込み再生になる
+
+  // 中2「式の計算」(g2c1)：章ぜんたいのワークシート(1章 式の計算.pdf, 18ページ)を共有。
+  //  どの小単元から開いても同じプリントが出て、ページ送りで該当ページへ。
+  //  動画IDは未設定（lessonMediaForが19chへのフォールバックを返す）。集まり次第ここに追記。
+  g2c1u1: { youtubeId: "", pdf: "g2c1.pdf" },
+  g2c1u2: { youtubeId: "", pdf: "g2c1.pdf" },
+  g2c1u3: { youtubeId: "", pdf: "g2c1.pdf" },
+  g2c1u4: { youtubeId: "", pdf: "g2c1.pdf" },
+  g2c1u5: { youtubeId: "", pdf: "g2c1.pdf" },
+  g2c1u6: { youtubeId: "", pdf: "g2c1.pdf" },
 };
 
 export function hasLessonMedia(unitId) {
